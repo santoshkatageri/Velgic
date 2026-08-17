@@ -1,0 +1,205 @@
+VELGIC PUBLISHING MANIFEST — AI GENERATION PROMPT
+Schema version: 1.0
+Works with: ChatGPT, Gemini, Claude, Grok, or any AI tool.
+
+TASK
+Generate a complete Velgic Publishing Manifest for the campaign below. Fill in any {{PLACEHOLDER}} values that are still needed, improve the provided text where asked, then output the finished manifest as JSON.
+
+CONTEXT ({{PLACEHOLDER}} means: fill this in before sending)
+
+{{CONTENT_TITLE}}: Top open-source alternatives for content creators
+{{CONTENT_CONCEPT}}: Free, open-source replacements for the paid creator stack — video editing, design, hosting, analytics — each with one honest caveat, framed as "you trade money for setup time".
+{{CONTENT_ORIGIN}}: research
+{{CONTENT_TYPE}}: short_video
+{{CONTENT_FORMAT}}: Vertical short-form, under 60s
+{{HOOK}}: You do not need to pay for your creator stack. Here are the open-source tools I actually use.
+{{TARGET_AUDIENCE}}: Technical creators
+{{CONTENT_STATUS}}: in_production
+{{BRAND_NAME}}: {{BRAND_NAME}}
+{{BRAND_VOICE}}: {{BRAND_VOICE}}
+{{BRAND_HANDLE}}: {{BRAND_HANDLE}}
+{{PLATFORMS}}: instagram (Reel), youtube (Short), linkedin (Post), x (Thread)
+{{FORMATS}}: Reel, Short, Post, Thread
+{{ASSETS}}: instagram/oss-reel.mp4 | filename=oss-reel.mp4 | type=video | asset_id=instagram-reel-03 | role=media | provider=local | mimeType=video/mp4 | size=24800000 | duration=42 | platform=instagram
+youtube/oss-short.mp4 | filename=oss-short.mp4 | type=video | asset_id=youtube-short-03 | role=video | provider=local | mimeType=video/mp4 | size=24800000 | duration=42 | platform=youtube
+youtube/oss-thumb.jpg | filename=oss-thumb.jpg | type=image | asset_id=youtube-thumb-03 | role=thumbnail | provider=local | mimeType=image/jpeg | size=320000 | duration=null | platform=youtube
+{{TIMEZONE}}: Asia/Kolkata
+{{SCHEDULE}}: youtube: 2026-08-18T09:00:00.000Z (Aug 18, 2:30 PM · Asia/Kolkata)
+{{PUBLISHED_URL}}: instagram: https://www.instagram.com/reel/oss-creators
+{{HASHTAGS}}: #opensource #creators #buildinpublic
+{{LOCATION}}: {{LOCATION}}
+
+CAMPAIGN NAME: Top Open Source Alternatives
+CAMPAIGN STATUS: partially_published
+CAMPAIGN DESCRIPTION: One content concept, distributed across four platforms.
+
+EXISTING PLATFORM TEXT (preserve or improve — do not discard)
+
+[instagram · Reel · Published]
+caption: You do not need to pay for your creator stack 🤝
+
+Every paid tool I replaced with an open-source alternative — and the one caveat that keeps me honest.
+
+Save this for your next setup 👇
+hashtags: #opensource #creators #buildinpublic
+
+[youtube · Short · Scheduled]
+title: Top open-source alternatives for content creators
+description: The free, open-source replacements for your paid creator stack — video editing, design, hosting, analytics — with one honest caveat per tool.
+tags: open source, creator tools, oss
+
+[linkedin · Post · Ready]
+post: You do not need a paid subscription for every part of your creator stack.
+
+Every tool I replaced with an open-source alternative — video editing, design, hosting, analytics — and the one honest caveat for each.
+
+The caveat pattern: free means you trade money for setup time.
+
+#OpenSource #BuildInPublic #CreatorEconomy
+
+[x · Thread · Draft]
+post/thread:
+You do not need to pay for your creator stack.
+
+Every paid tool I replaced with an open-source alternative — and the one caveat that keeps me honest.
+
+Video editing, design, hosting, analytics: there is an open-source option for each.
+
+The caveat: free means you trade money for setup time. Bookmark the ones worth that trade.
+
+RULES
+1. Return ONLY valid JSON.
+2. Do not use markdown fences (no ```json … ``` wrappers).
+3. Do not provide explanations, commentary, or any text outside the JSON.
+4. Do not invent assets. Only reference the asset references provided below.
+5. Do not invent URLs. Use null when a published URL is unknown.
+6. Do not invent dates. Only use the schedule datetimes provided below.
+7. Use null for unavailable optional values.
+8. Follow the Velgic schema exactly — keep every required field and its type.
+9. Preserve provided asset references (asset_id, filename, type, reference) unchanged.
+10. Use valid ISO 8601 datetime values (e.g. 2026-08-20T09:00:00-04:00).
+11. Respect the requested platform and format values.
+12. Preserve factual/user-provided information unless explicitly instructed to modify it.
+
+VELGIC PUBLISHING MANIFEST SCHEMA (follow exactly)
+Top level: schema_version (string, always "1.0"), manifest_id (string), generated_at (ISO 8601), timezone (IANA name or null), brand { name, voice, handle } (strings or null), campaign {…}, platforms [ … ].
+campaign: { id, name (non-empty string), description (string or null), status (optional, one of: draft, ready, partially_published, published, archived), content { id, title, concept, origin, audience, content_type, format, hook, draft, notes, status, linked_idea_id, linked_experiment_id } }.
+content.origin must be one of: idea, experiment, research, observation, opinion, trend, personal_experience, direct.
+content.content_type must be one of: reel, carousel, short_video, linkedin_post, x_post, x_thread, youtube_short, youtube_video, article, tutorial.
+content.status must be one of: draft, in_production, ready, published, archived.
+platform.status must be one of: draft, ready, scheduled, published, failed.
+platforms[] entries: { platform, id, format, status, schedule { enabled, datetime, timezone }, published_url, published_at, assets [ … ], notes, metadata { … } }.
+platform must be one of: instagram, youtube, linkedin, x.
+Allowed format per platform: instagram → Reel | Carousel | Post; youtube → Short | Video; linkedin → Post | Article; x → Post | Thread (matching is case-insensitive).
+assets[] entries: { asset_id, filename, type, reference, provider, role, mimeType, size, duration }. type must be one of: video, image, audio, document, link. role is "video" | "thumbnail" | "media" | null. size (bytes) and duration (seconds) are numbers or null; mimeType is a string or null. Assets are references only — never embed media bytes.
+instagram metadata: { caption (string), hashtags (array of strings), location (string or null) }.
+youtube metadata: { title (non-empty string), description (string), tags (array of strings) }.
+linkedin metadata: { post_text (string) }.
+x metadata: { content (string), is_thread (boolean), thread (array of strings or null — required as an array when is_thread is true) }.
+schedule: enabled (boolean), datetime (ISO 8601 or null — required when enabled), timezone (IANA name or null).
+published_url: a valid http(s) URL string when present, otherwise null.
+
+NOTE: The EXAMPLE below shows the exact shape and key names only — DO NOT copy its values. Fill every value from the CONTEXT and EXISTING PLATFORM TEXT sections above.
+EXAMPLE (match this shape and key names exactly)
+{
+  "schema_version": "1.0",
+  "manifest_id": "velgic-manifest-<campaign-id>",
+  "generated_at": "2026-08-17T09:00:00Z",
+  "timezone": "Asia/Kolkata",
+  "brand": { "name": null, "voice": null, "handle": null },
+  "campaign": {
+    "id": "camp-04",
+    "name": "Top Open Source Alternatives",
+    "description": "One content concept, distributed across four platforms.",
+    "status": "partially_published",
+    "content": {
+      "id": "content-04",
+      "title": "Top open-source alternatives for content creators",
+      "concept": "Free, open-source replacements for the paid creator stack — each with one honest caveat.",
+      "origin": "research",
+      "audience": "Technical creators",
+      "content_type": "short_video",
+      "format": "Vertical short-form",
+      "hook": "You do not need to pay for your creator stack. Here are the open-source tools I actually use.",
+      "draft": null,
+      "notes": null,
+      "status": "in_production",
+      "linked_idea_id": null,
+      "linked_experiment_id": null
+    }
+  },
+  "platforms": [
+    {
+      "platform": "instagram",
+      "id": "pc-11",
+      "format": "Reel",
+      "status": "published",
+      "schedule": { "enabled": false, "datetime": null, "timezone": null },
+      "published_url": "https://www.instagram.com/reel/oss-creators",
+      "published_at": "2026-08-15T10:30:00Z",
+      "assets": [
+        { "asset_id": "instagram-reel-03", "filename": "oss-reel.mp4", "type": "video", "reference": "instagram/oss-reel.mp4", "provider": "local", "role": "media", "mimeType": "video/mp4", "size": 24800000, "duration": 42 }
+      ],
+      "notes": null,
+      "metadata": {
+        "caption": "You do not need to pay for your creator stack. Here are the open-source tools I actually use.",
+        "hashtags": ["#opensource", "#creators", "#buildinpublic"],
+        "location": null
+      }
+    },
+    {
+      "platform": "youtube",
+      "id": "pc-12",
+      "format": "Short",
+      "status": "scheduled",
+      "schedule": { "enabled": true, "datetime": "2026-08-20T18:00:00+05:30", "timezone": "Asia/Kolkata" },
+      "published_url": null,
+      "published_at": null,
+      "assets": [
+        { "asset_id": "youtube-short-03", "filename": "oss-short.mp4", "type": "video", "reference": "youtube/oss-short.mp4", "provider": "local", "role": "video", "mimeType": "video/mp4", "size": null, "duration": 42 },
+        { "asset_id": "youtube-thumb-03", "filename": "oss-thumb.jpg", "type": "image", "reference": "youtube/oss-thumb.jpg", "provider": "local", "role": "thumbnail", "mimeType": "image/jpeg", "size": 320000, "duration": null }
+      ],
+      "notes": null,
+      "metadata": {
+        "title": "Top open-source alternatives for content creators",
+        "description": "The free, open-source replacements for your paid creator stack — with one honest caveat per tool.",
+        "tags": ["open source", "creator tools", "oss"]
+      }
+    },
+    {
+      "platform": "linkedin",
+      "id": "pc-13",
+      "format": "Post",
+      "status": "ready",
+      "schedule": { "enabled": false, "datetime": null, "timezone": null },
+      "published_url": null,
+      "published_at": null,
+      "assets": [],
+      "notes": null,
+      "metadata": {
+        "post_text": "You do not need a paid subscription for every part of your creator stack. Here are the open-source tools I actually use — and the one honest caveat for each."
+      }
+    },
+    {
+      "platform": "x",
+      "id": "pc-14",
+      "format": "Thread",
+      "status": "draft",
+      "schedule": { "enabled": false, "datetime": null, "timezone": null },
+      "published_url": null,
+      "published_at": null,
+      "assets": [],
+      "notes": null,
+      "metadata": {
+        "content": "You do not need to pay for your creator stack.",
+        "is_thread": true,
+        "thread": [
+          "You do not need to pay for your creator stack.",
+          "Every paid tool I replaced with an open-source alternative — and the one caveat that keeps me honest.",
+          "Video editing, design, hosting, analytics: there is an open-source option for each.",
+          "The caveat: free means you trade money for setup time. Bookmark the ones worth that trade."
+        ]
+      }
+    }
+  ]
+}

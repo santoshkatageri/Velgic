@@ -9,19 +9,23 @@ import {
   IconPipeline,
   IconFlask,
   IconChart,
+  IconDoc,
   IconPlus,
   IconRefresh,
 } from './icons'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: IconDashboard, end: true },
-  { to: '/ideas', label: 'Ideas', icon: IconInbox, end: false },
-  { to: '/pipeline', label: 'Pipeline', icon: IconPipeline, end: false },
-  { to: '/experiments', label: 'Experiments', icon: IconFlask, end: false },
-  { to: '/insights', label: 'Insights', icon: IconChart, end: false },
+  { to: '/', label: 'Dashboard', icon: IconDashboard, match: (p: string) => p === '/' },
+  { to: '/ideas', label: 'Ideas', icon: IconInbox, match: (p: string) => p.startsWith('/ideas') },
+  { to: '/content', label: 'Content', icon: IconDoc, match: (p: string) => p.startsWith('/content') || p.startsWith('/campaigns/') },
+  { to: '/pipeline', label: 'Pipeline', icon: IconPipeline, match: (p: string) => p.startsWith('/pipeline') },
+  { to: '/experiments', label: 'Experiments', icon: IconFlask, match: (p: string) => p.startsWith('/experiments') },
+  { to: '/insights', label: 'Insights', icon: IconChart, match: (p: string) => p.startsWith('/insights') },
 ]
 
 function pageTitle(pathname: string): string {
+  if (pathname.startsWith('/campaigns/')) return 'Campaign'
+  if (pathname.startsWith('/content')) return 'Content'
   if (pathname.startsWith('/items/')) return 'Content Detail'
   if (pathname.startsWith('/ideas')) return 'Idea Inbox'
   if (pathname.startsWith('/pipeline')) return 'Content Pipeline'
@@ -57,8 +61,12 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="nav">
-          {NAV.map(({ to, label, icon: Icon, end }) => (
-            <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'nav__item nav__item--active' : 'nav__item')}>
+          {NAV.map(({ to, label, icon: Icon, match }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={() => (match(location.pathname) ? 'nav__item nav__item--active' : 'nav__item')}
+            >
               <Icon size={17} />
               <span>{label}</span>
             </NavLink>
@@ -70,7 +78,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <IconRefresh size={14} />
             Reset demo data
           </button>
-          <span className="sidebar__version">v0.1 · local-first</span>
+          <span className="sidebar__version">v2.0 · local-first</span>
         </div>
       </aside>
 

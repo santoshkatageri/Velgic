@@ -4,7 +4,7 @@ import { useUI } from '../store/uiStore'
 import { EXPERIMENT_STATUSES, EXPERIMENT_STATUS_META, EXPERIMENT_OUTCOME_META } from '../lib/constants'
 import { formatDate } from '../lib/utils'
 import { Button, Card, Badge, EmptyState, useConfirm } from '../components/ui'
-import { IconPlus, IconFlask, IconEdit, IconTrash, IconCheck } from '../components/icons'
+import { IconPlus, IconFlask, IconEdit, IconTrash, IconCheck, IconBolt } from '../components/icons'
 import type { Experiment, ExperimentStatus } from '../types'
 
 function OutcomeBadge({ outcome }: { outcome: Experiment['outcome'] }) {
@@ -21,7 +21,20 @@ export function Experiments() {
   const experiments = useStore((s) => s.experiments)
   const deleteExperiment = useStore((s) => s.deleteExperiment)
   const openExperimentEditor = useUI((s) => s.openExperimentEditor)
+  const openContentEditor = useUI((s) => s.openContentEditor)
   const confirm = useConfirm()
+
+  const createContentFromExperiment = (e: Experiment) =>
+    openContentEditor({
+      prefill: {
+        origin: 'experiment',
+        experimentId: e.id,
+        title: e.name,
+        concept: e.keyLearning || e.hypothesis || '',
+        notes: e.followUpIdea || '',
+        contentType: 'short_video',
+      },
+    })
 
   const [status, setStatus] = useState<ExperimentStatus | 'all'>('all')
 
@@ -82,6 +95,9 @@ export function Experiments() {
                   </div>
                 </div>
                 <div className="card__actions" onClick={(ev) => ev.stopPropagation()}>
+                  <button className="icon-btn" onClick={() => createContentFromExperiment(e)} aria-label="Create content" title="Create content from this experiment">
+                    <IconBolt size={15} />
+                  </button>
                   <button className="icon-btn" onClick={() => openExperimentEditor(e)} aria-label="Edit">
                     <IconEdit size={15} />
                   </button>

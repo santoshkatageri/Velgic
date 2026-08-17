@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.0",
+  "manifest_id": "velgic-manifest-ai-roundtrip",
+  "generated_at": "2026-08-17T13:11:49.878Z",
+  "timezone": "Asia/Kolkata",
+  "brand": {
+    "name": null,
+    "voice": null,
+    "handle": null
+  },
+  "campaign": {
+    "id": "camp-ai",
+    "name": "Top Open Source Alternatives",
+    "description": "One content concept, distributed across four platforms.",
+    "status": "partially_published",
+    "content": {
+      "id": "content-ai",
+      "title": "Top open-source alternatives for content creators",
+      "concept": "Free, open-source replacements for the paid creator stack — video editing, design, hosting, analytics — each with one honest caveat, framed as \"you trade money for setup time\".",
+      "origin": "research",
+      "audience": "Technical creators",
+      "content_type": "short_video",
+      "format": "Vertical short-form, under 60s",
+      "hook": "You do not need to pay for your creator stack. Here are the open-source tools I actually use.",
+      "draft": null,
+      "notes": null,
+      "status": "in_production",
+      "linked_idea_id": null,
+      "linked_experiment_id": null
+    }
+  },
+  "platforms": [
+    {
+      "platform": "instagram",
+      "id": "pc-ai-1",
+      "format": "Reel",
+      "status": "published",
+      "schedule": {
+        "enabled": false,
+        "datetime": null,
+        "timezone": null
+      },
+      "published_url": "https://www.instagram.com/reel/oss-creators",
+      "published_at": null,
+      "assets": [
+        {
+          "asset_id": "instagram-reel-03",
+          "filename": "oss-reel.mp4",
+          "type": "video",
+          "reference": "instagram/oss-reel.mp4",
+          "provider": "local",
+          "role": "media",
+          "mimeType": "video/mp4",
+          "size": 24800000,
+          "duration": 42
+        }
+      ],
+      "notes": null,
+      "metadata": {
+        "caption": "You do not need to pay for your creator stack 🤝\n\nEvery paid tool I replaced with an open-source alternative — and the one caveat that keeps me honest.\n\nSave this for your next setup 👇",
+        "hashtags": [
+          "#opensource",
+          "#creators",
+          "#buildinpublic"
+        ],
+        "location": null
+      }
+    },
+    {
+      "platform": "youtube",
+      "id": "pc-ai-2",
+      "format": "Short",
+      "status": "scheduled",
+      "schedule": {
+        "enabled": true,
+        "datetime": "2026-08-18T09:00:00.000Z",
+        "timezone": "Asia/Kolkata"
+      },
+      "published_url": null,
+      "published_at": null,
+      "assets": [
+        {
+          "asset_id": "youtube-short-03",
+          "filename": "oss-short.mp4",
+          "type": "video",
+          "reference": "youtube/oss-short.mp4",
+          "provider": "local",
+          "role": "video",
+          "mimeType": "video/mp4",
+          "size": 24800000,
+          "duration": 42
+        },
+        {
+          "asset_id": "youtube-thumb-03",
+          "filename": "oss-thumb.jpg",
+          "type": "image",
+          "reference": "youtube/oss-thumb.jpg",
+          "provider": "local",
+          "role": "thumbnail",
+          "mimeType": "image/jpeg",
+          "size": 320000,
+          "duration": null
+        }
+      ],
+      "notes": null,
+      "metadata": {
+        "title": "Top open-source alternatives for content creators",
+        "description": "The free, open-source replacements for your paid creator stack — video editing, design, hosting, analytics — with one honest caveat per tool.",
+        "tags": [
+          "open source",
+          "creator tools",
+          "oss"
+        ]
+      }
+    },
+    {
+      "platform": "linkedin",
+      "id": "pc-ai-3",
+      "format": "Post",
+      "status": "ready",
+      "schedule": {
+        "enabled": false,
+        "datetime": null,
+        "timezone": null
+      },
+      "published_url": null,
+      "published_at": null,
+      "assets": [],
+      "notes": null,
+      "metadata": {
+        "post_text": "You do not need a paid subscription for every part of your creator stack.\n\nEvery tool I replaced with an open-source alternative — video editing, design, hosting, analytics — and the one honest caveat for each.\n\nThe caveat pattern: free means you trade money for setup time.\n\n#OpenSource #BuildInPublic #CreatorEconomy\n"
+      }
+    },
+    {
+      "platform": "x",
+      "id": "pc-ai-4",
+      "format": "Thread",
+      "status": "draft",
+      "schedule": {
+        "enabled": false,
+        "datetime": null,
+        "timezone": null
+      },
+      "published_url": null,
+      "published_at": null,
+      "assets": [],
+      "notes": null,
+      "metadata": {
+        "content": "\nYou do not need to pay for your creator stack.\n\nEvery paid tool I replaced with an open-source alternative — and the one caveat that keeps me honest.\n\nVideo editing, design, hosting, analytics: there is an open-source option for each.\n\nThe caveat: free means you trade money for setup time. Bookmark the ones worth that trade.\n",
+        "is_thread": true,
+        "thread": [
+          "You do not need to pay for your creator stack.",
+          "Every paid tool I replaced with an open-source alternative — and the one caveat that keeps me honest.",
+          "Video editing, design, hosting, analytics: there is an open-source option for each.",
+          "The caveat: free means you trade money for setup time. Bookmark the ones worth that trade."
+        ]
+      }
+    }
+  ]
+}

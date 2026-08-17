@@ -163,3 +163,151 @@ export const IconChevronRight = (p: IconProps) => (
     <path d="m9 18 6-6-6-6" />
   </Svg>
 )
+
+export const IconChevronDown = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m6 9 6 6 6-6" />
+  </Svg>
+)
+
+export const IconDoc = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <path d="M14 2v6h6" />
+    <path d="M16 13H8M16 17H8M10 9H8" />
+  </Svg>
+)
+
+export const IconMegaphone = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m3 11 18-5v12L3 13v-2z" />
+    <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+  </Svg>
+)
+
+export const IconDownload = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <path d="m7 10 5 5 5-5" />
+    <path d="M12 15V3" />
+  </Svg>
+)
+
+export const IconUpload = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <path d="m17 8-5-5-5 5" />
+    <path d="M12 3v12" />
+  </Svg>
+)
+
+export const IconCopy = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="9" y="9" width="12" height="12" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </Svg>
+)
+
+export const IconExternal = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <path d="M15 3h6v6" />
+    <path d="M10 14 21 3" />
+  </Svg>
+)
+
+export const IconCalendar = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4M8 2v4M3 10h18" />
+  </Svg>
+)
+
+export const IconLink = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </Svg>
+)
+
+export const IconJson = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M8 4c-1.5 0-3 .9-3 3v2c0 1-.6 2-2 3 1.4 1 2 2 2 3v2c0 2.1 1.5 3 3 3" />
+    <path d="M16 4c1.5 0 3 .9 3 3v2c0 1 .6 2 2 3-1.4 1-2 2-2 3v2c0 2.1-1.5 3-3 3" />
+  </Svg>
+)
+
+export const IconHashtag = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 9h16M4 15h16" />
+    <path d="M10 3 8 21M16 3l-2 18" />
+  </Svg>
+)
+
+export const IconCheckCircle = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m8.5 12 2.5 2.5 4.5-5" />
+  </Svg>
+)
+
+export const IconVideo = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="2" y="5" width="14" height="14" rx="3" />
+    <path d="m16 10 6-3v10l-6-3" />
+  </Svg>
+)
+
+export const IconImage = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <path d="m21 15-5-5L5 21" />
+  </Svg>
+)
+
+export const IconMusic = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </Svg>
+)
+
+/* --- Platform glyphs ----------------------------------------------------- */
+
+export const IconInstagram = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="5" />
+    <circle cx="12" cy="12" r="4" />
+    <circle cx="17.2" cy="6.8" r="0.9" fill="currentColor" stroke="none" />
+  </Svg>
+)
+
+export const IconYoutube = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="2" y="5" width="20" height="14" rx="4" />
+    <path d="m10 9.5 5 2.5-5 2.5z" fill="currentColor" stroke="none" />
+  </Svg>
+)
+
+export const IconLinkedin = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="4" />
+    <path d="M8 11v6M8 7.5v.01" />
+    <path d="M12 17v-3.6c0-1.6 1-2.4 2.3-2.4s2.2 1 2.2 2.6V17" />
+  </Svg>
+)
+
+export const IconXBrand = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 4l16 16M20 4 4 20" />
+  </Svg>
+)
+
+export const IconPlatform: Record<string, (p: IconProps) => JSX.Element> = {
+  instagram: IconInstagram,
+  youtube: IconYoutube,
+  linkedin: IconLinkedin,
+  x: IconXBrand,
+}

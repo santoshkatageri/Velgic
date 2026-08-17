@@ -1,35 +1,66 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/uiStore'
 import { getRecommendation } from '../lib/recommend'
 import { opportunityScore } from '../lib/scoring'
-import { EFFORT_LABELS, STAGES, STAGE_META } from '../lib/constants'
+import { EFFORT_LABELS, STAGES, STAGE_META, CONTENT_TYPE_META, CONTENT_STATUSES, CONTENT_STATUS_META } from '../lib/constants'
 import { CATEGORIES } from '../lib/constants'
+import { contentStatusTone, ideaFormatToContentType } from '../lib/content'
 import { uid, nowIso, formatNumber, timeAgo } from '../lib/utils'
-import { Button, Card, CardHeader, Badge, CategoryBadge, Select, Textarea } from '../components/ui'
-import { IconSparkle, IconCapture, IconBolt, IconCheck, IconChevronRight, IconFlask } from '../components/icons'
+import { Button, Card, CardHeader, Badge, CategoryBadge, ContentStatusBadge, Select, Textarea } from '../components/ui'
+import { IconSparkle, IconCapture, IconBolt, IconCheck, IconChevronRight, IconFlask, IconDoc, IconMegaphone } from '../components/icons'
 import type { Item } from '../types'
 
 export function Dashboard() {
   const items = useStore((s) => s.items)
   const experiments = useStore((s) => s.experiments)
+  const contents = useStore((s) => s.contents)
+  const campaigns = useStore((s) => s.campaigns)
   const dismissed = useStore((s) => s.dismissed)
   const dismiss = useStore((s) => s.dismiss)
   const addItem = useStore((s) => s.addItem)
   const openEditor = useUI((s) => s.openEditor)
   const openExperimentEditor = useUI((s) => s.openExperimentEditor)
-  const navigate = useNavigate()
+  const openContentEditor = useUI((s) => s.openContentEditor)
 
   const reco = useMemo(() => getRecommendation(items, dismissed), [items, dismissed])
 
   const inboxCount = items.filter((i) => i.stage === 'ideas').length
   const pipelineCount = items.filter((i) => ['research', 'script', 'production'].includes(i.stage)).length
   const publishedCount = items.filter((i) => i.stage === 'published').length
+  const contentCount = contents.length
   const totalViews = items.reduce((sum, i) => sum + (i.performance?.views ?? 0), 0)
   const avgScore = inboxCount
     ? Math.round(items.filter((i) => i.stage === 'ideas').reduce((s, i) => s + opportunityScore(i.scores), 0) / inboxCount)
     : 0
+
+  const recentContent = [...contents]
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 4)
+
+  const statusCounts = CONTENT_STATUSES.map((s) => ({
+    status: s,
+    count: contents.filter((c) => c.status === s).length,
+  }))
+  const maxStatusCount = Math.max(1, ...statusCounts.map((s) => s.count))
+
+  const createContentFromReco = () => {
+    if (!reco) return
+    const item = reco.item
+    openContentEditor({
+      prefill: {
+        origin: 'idea',
+        ideaId: item.id,
+        title: item.title,
+        concept: item.coreIdea || item.problem || '',
+        audience: item.audience,
+        notes: item.notes,
+        contentType: ideaFormatToContentType(item.format),
+        format: item.format,
+      },
+    })
+  }
 
   // Quick capture
   const [captureText, setCaptureText] = useState('')
@@ -94,14 +125,18 @@ export function Dashboard() {
           <span className="stat__sub">research → production</span>
         </div>
         <div className="stat">
-          <span className="stat__label">Published</span>
-          <span className="stat__value">{publishedCount}</span>
-          <span className="stat__sub">records with data</span>
+          <span className="stat__label">Content</span>
+          <span className="stat__value">{contentCount}</span>
+          <span className="stat__sub">
+            {campaigns.length} campaign{campaigns.length === 1 ? '' : 's'}
+          </span>
         </div>
         <div className="stat">
-          <span className="stat__label">Total views</span>
-          <span className="stat__value">{formatNumber(totalViews)}</span>
-          <span className="stat__sub">across published work</span>
+          <span className="stat__label">Published</span>
+          <span className="stat__value">{publishedCount}</span>
+          <span className="stat__sub">
+            records with data · {formatNumber(totalViews)} total views
+          </span>
         </div>
       </div>
 
@@ -164,7 +199,12 @@ export function Dashboard() {
                   <Button variant="primary" icon={<IconFlask size={15} />} onClick={() => openExperimentEditor(null, reco.item.title)}>
                     Start experiment
                   </Button>
-                  <Button variant="outline" icon={<IconBolt size={15} />} onClick={() => navigate(`/items/${reco.item.id}`)}>
+                  <Button
+                    variant="outline"
+                    icon={<IconBolt size={15} />}
+                    title="Create content directly from this idea — no experiment needed"
+                    onClick={createContentFromReco}
+                  >
                     Create content
                   </Button>
                   <Button variant="ghost" onClick={() => dismiss(reco.item.id)}>
@@ -277,6 +317,79 @@ export function Dashboard() {
                 ))}
               </div>
             )}
+          </Card>
+        </div>
+
+        {/* Content status */}
+        <div className="col-5">
+          <Card>
+            <CardHeader
+              title="Content status"
+              meta="Where your content concepts stand."
+              actions={<IconDoc size={15} style={{ color: 'var(--text-faint)' }} />}
+            />
+            <div className="pipe-summary">
+              {statusCounts.map(({ status, count }) => (
+                <div key={status} className="pipe-row">
+                  <span className="pipe-row__label">{CONTENT_STATUS_META[status].label}</span>
+                  <div className="pipe-row__track">
+                    <div
+                      className={`pipe-row__fill pipe-row__fill--${contentStatusTone(status)}`}
+                      style={{ width: `${(count / maxStatusCount) * 100}%` }}
+                    />
+                  </div>
+                  <span className="pipe-row__count">{count}</span>
+                </div>
+              ))}
+            </div>
+            <Link to="/content" className="inline-link" style={{ marginTop: 14, display: 'inline-flex' }}>
+              All content <IconChevronRight size={13} />
+            </Link>
+          </Card>
+        </div>
+
+        {/* Recent content */}
+        <div className="col-7">
+          <Card>
+            <CardHeader
+              title="Recent content"
+              meta="Content concepts + their campaigns."
+              actions={
+                <Link to="/content" className="inline-link">
+                  All content <IconChevronRight size={13} />
+                </Link>
+              }
+            />
+            {recentContent.length === 0 ? (
+              <p className="empty__hint">
+                No content yet. Turn any idea straight into content — no experiment required — or create one directly.
+              </p>
+            ) : (
+              <div className="row-list">
+                {recentContent.map((c) => {
+                  const campaignCount = campaigns.filter((k) => k.contentId === c.id).length
+                  return (
+                    <Link key={c.id} to={`/content/${c.id}`} className="row-item row-item--clickable">
+                      <div className="row-item__main">
+                        <div className="row-item__title">{c.title}</div>
+                        <div className="row-item__sub">
+                          {CONTENT_TYPE_META[c.contentType].label} · {timeAgo(c.updatedAt)}
+                        </div>
+                      </div>
+                      {campaignCount > 0 && (
+                        <Badge tone="accent">
+                          <IconMegaphone size={11} /> {campaignCount}
+                        </Badge>
+                      )}
+                      <ContentStatusBadge status={c.status} />
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+            <button className="inline-link inline-link--button" style={{ marginTop: 12 }} onClick={() => openContentEditor()}>
+              <IconDoc size={13} /> New content <IconChevronRight size={13} />
+            </button>
           </Card>
         </div>
       </div>

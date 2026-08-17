@@ -2,8 +2,9 @@ import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNo
 import { createPortal } from 'react-dom'
 import { useEffect } from 'react'
 import { cx, clamp } from '../lib/utils'
-import { CATEGORY_COLORS } from '../lib/constants'
-import type { Priority, Stage } from '../types'
+import { CAMPAIGN_STATUS_META, CATEGORY_COLORS, CONTENT_STATUS_META, PUBLISH_STATUS_META } from '../lib/constants'
+import { campaignStatusTone, contentStatusTone, publishStatusTone } from '../lib/content'
+import type { Priority, Stage, PublishStatus, ContentOrigin, ContentStatus, CampaignStatus } from '../types'
 import { useUI } from '../store/uiStore'
 import { IconClose } from './icons'
 
@@ -36,14 +37,16 @@ export function Badge({
   tone = 'neutral',
   dot,
   className,
+  title,
 }: {
   children: ReactNode
   tone?: 'neutral' | 'accent' | 'green' | 'amber' | 'red' | 'violet' | 'sky' | 'cyan' | 'pink' | 'emerald' | 'rose' | 'lime'
   dot?: boolean
   className?: string
+  title?: string
 }) {
   return (
-    <span className={cx('badge', `badge--${tone}`, className)}>
+    <span className={cx('badge', `badge--${tone}`, className)} title={title}>
       {dot && <span className="badge__dot" />}
       {children}
     </span>
@@ -83,6 +86,35 @@ export function stageLabel(stage: Stage): string {
 export function PriorityBadge({ priority }: { priority: Priority }) {
   const tone = priority === 'high' ? 'red' : priority === 'medium' ? 'amber' : 'neutral'
   return <Badge tone={tone}>{priority}</Badge>
+}
+
+export function PublishStatusBadge({ status }: { status: PublishStatus }) {
+  return <Badge tone={publishStatusTone(status)}>{PUBLISH_STATUS_META[status].label}</Badge>
+}
+
+export function ContentStatusBadge({ status }: { status: ContentStatus }) {
+  return <Badge tone={contentStatusTone(status)}>{CONTENT_STATUS_META[status].label}</Badge>
+}
+
+export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
+  return <Badge tone={campaignStatusTone(status)}>{CAMPAIGN_STATUS_META[status].label}</Badge>
+}
+
+type BadgeTone = 'neutral' | 'accent' | 'green' | 'amber' | 'red' | 'violet' | 'sky' | 'cyan' | 'pink' | 'emerald' | 'rose' | 'lime'
+
+const ORIGIN_TONES: Record<ContentOrigin, BadgeTone> = {
+  idea: 'accent',
+  experiment: 'violet',
+  research: 'sky',
+  observation: 'cyan',
+  opinion: 'pink',
+  trend: 'amber',
+  personal_experience: 'rose',
+  direct: 'neutral',
+}
+
+export function OriginBadge({ origin, label }: { origin: ContentOrigin; label?: string }) {
+  return <Badge tone={ORIGIN_TONES[origin] ?? 'neutral'}>{label ?? origin.replace(/_/g, ' ')}</Badge>
 }
 
 /* -------------------------------------------------------------------------- */
@@ -267,7 +299,55 @@ export function Drawer({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Confirm                                                                    */
+/*  Modal (centered dialog)                                                    */
+/* -------------------------------------------------------------------------- */
+export function Modal({
+  open,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  width = 640,
+}: {
+  open: boolean
+  onClose: () => void
+  title: ReactNode
+  subtitle?: ReactNode
+  children: ReactNode
+  footer?: ReactNode
+  width?: number
+}) {
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  if (!open) return null
+
+  return createPortal(
+    <div className="modal-root">
+      <div className="modal-overlay" onClick={onClose} />
+      <div className="modal" style={{ width }} role="dialog" aria-modal="true">
+        <header className="modal__header">
+          <div>
+            <h2 className="modal__title">{title}</h2>
+            {subtitle && <p className="modal__subtitle">{subtitle}</p>}
+          </div>
+          <Button variant="ghost" size="sm" icon={<IconClose />} onClick={onClose} aria-label="Close" />
+        </header>
+        <div className="modal__body">{children}</div>
+        {footer && <footer className="modal__footer">{footer}</footer>}
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Confirm                                                                    */
 /* -------------------------------------------------------------------------- */
 export function useConfirm() {
   return useUI((s) => s.requestConfirm)

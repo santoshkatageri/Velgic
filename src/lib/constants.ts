@@ -1,4 +1,16 @@
-import type { Priority, Stage, ExperimentStatus, ExperimentOutcome } from '../types'
+import type {
+  Priority,
+  Stage,
+  ExperimentStatus,
+  ExperimentOutcome,
+  ContentOrigin,
+  ContentTypeKey,
+  PublishStatus,
+  PlatformKey,
+  AssetType,
+  ContentStatus,
+  CampaignStatus,
+} from '../types'
 
 export const CATEGORIES = [
   'AI',
@@ -87,3 +99,136 @@ export const EFFORT_LABELS: Record<number, string> = {
   4: 'Heavy',
   5: 'Deep',
 }
+
+/* -------------------------------------------------------------------------- */
+/*  V2 — Content & publishing constants                                        */
+/* -------------------------------------------------------------------------- */
+
+export const CONTENT_TYPES: ContentTypeKey[] = [
+  'reel',
+  'carousel',
+  'short_video',
+  'linkedin_post',
+  'x_post',
+  'x_thread',
+  'youtube_short',
+  'youtube_video',
+  'article',
+  'tutorial',
+]
+
+export const CONTENT_TYPE_META: Record<ContentTypeKey, { label: string; hint: string }> = {
+  reel: { label: 'Reel', hint: 'Short vertical video for Instagram' },
+  carousel: { label: 'Carousel', hint: 'Swipeable multi-slide post' },
+  short_video: { label: 'Short video', hint: 'Short-form vertical video, any platform' },
+  linkedin_post: { label: 'LinkedIn post', hint: 'Text-first professional post' },
+  x_post: { label: 'X post', hint: 'Single post on X' },
+  x_thread: { label: 'X thread', hint: 'Multi-post thread on X' },
+  youtube_short: { label: 'YouTube Short', hint: 'Vertical video under 60s' },
+  youtube_video: { label: 'YouTube video', hint: 'Long-form video' },
+  article: { label: 'Article', hint: 'Long-form written piece' },
+  tutorial: { label: 'Tutorial', hint: 'Step-by-step how-to' },
+}
+
+export const CONTENT_ORIGINS: ContentOrigin[] = [
+  'idea',
+  'experiment',
+  'research',
+  'observation',
+  'opinion',
+  'trend',
+  'personal_experience',
+  'direct',
+]
+
+export const CONTENT_ORIGIN_META: Record<ContentOrigin, { label: string; hint: string }> = {
+  idea: { label: 'Idea', hint: 'Born from an idea in your inbox' },
+  experiment: { label: 'Experiment', hint: 'Born from something you tested' },
+  research: { label: 'Research', hint: 'From research or reading' },
+  observation: { label: 'Observation', hint: 'Something you noticed' },
+  opinion: { label: 'Opinion', hint: 'A take you want to share' },
+  trend: { label: 'Trend', hint: 'Responding to a trend' },
+  personal_experience: { label: 'Personal experience', hint: 'From your own lived experience' },
+  direct: { label: 'Direct content idea', hint: 'A standalone content concept' },
+}
+
+export const PUBLISH_STATUSES: PublishStatus[] = ['draft', 'ready', 'scheduled', 'published', 'failed']
+
+export const PUBLISH_STATUS_META: Record<PublishStatus, { label: string }> = {
+  draft: { label: 'Draft' },
+  ready: { label: 'Ready' },
+  scheduled: { label: 'Scheduled' },
+  published: { label: 'Published' },
+  failed: { label: 'Failed' },
+}
+
+/** Content concept lifecycle — independent of the production Pipeline stages. */
+export const CONTENT_STATUSES: ContentStatus[] = ['draft', 'in_production', 'ready', 'published', 'archived']
+
+export const CONTENT_STATUS_META: Record<ContentStatus, { label: string }> = {
+  draft: { label: 'Draft' },
+  in_production: { label: 'In Production' },
+  ready: { label: 'Ready' },
+  published: { label: 'Published' },
+  archived: { label: 'Archived' },
+}
+
+/** Campaign distribution lifecycle — independent of Content and Pipeline status. */
+export const CAMPAIGN_STATUSES: CampaignStatus[] = ['draft', 'ready', 'partially_published', 'published', 'archived']
+
+export const CAMPAIGN_STATUS_META: Record<CampaignStatus, { label: string }> = {
+  draft: { label: 'Draft' },
+  ready: { label: 'Ready' },
+  partially_published: { label: 'Partially Published' },
+  published: { label: 'Published' },
+  archived: { label: 'Archived' },
+}
+
+export const PLATFORM_KEYS: PlatformKey[] = ['instagram', 'youtube', 'linkedin', 'x']
+
+export const PLATFORM_META: Record<
+  PlatformKey,
+  { label: string; composerUrl: string; formats: string[]; defaultFormat: string; hint: string }
+> = {
+  instagram: {
+    label: 'Instagram',
+    composerUrl: 'https://www.instagram.com/',
+    formats: ['Reel', 'Carousel', 'Post'],
+    defaultFormat: 'Reel',
+    hint: 'Asset, caption, hashtags, location',
+  },
+  youtube: {
+    label: 'YouTube',
+    composerUrl: 'https://studio.youtube.com/',
+    formats: ['Short', 'Video'],
+    defaultFormat: 'Short',
+    hint: 'Video + thumbnail assets, title, description, tags',
+  },
+  linkedin: {
+    label: 'LinkedIn',
+    composerUrl: 'https://www.linkedin.com/feed/',
+    formats: ['Post', 'Article'],
+    defaultFormat: 'Post',
+    hint: 'Post text, media assets',
+  },
+  x: {
+    label: 'X (Twitter)',
+    composerUrl: 'https://x.com/compose/post',
+    formats: ['Post', 'Thread'],
+    defaultFormat: 'Post',
+    hint: 'Post / thread content, media assets',
+  },
+}
+
+export const ASSET_TYPES: AssetType[] = ['video', 'image', 'audio', 'document', 'link']
+
+export const ASSET_TYPE_META: Record<AssetType, { label: string }> = {
+  video: { label: 'Video' },
+  image: { label: 'Image' },
+  audio: { label: 'Audio' },
+  document: { label: 'Document' },
+  link: { label: 'Link' },
+}
+
+/** Canonical asset roles (manifest/validation). `null` = no specific role. */
+export const ASSET_ROLES: string[] = ['video', 'thumbnail', 'media']

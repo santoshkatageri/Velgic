@@ -1,4 +1,4 @@
-import type { Item, Experiment, ChecklistItem, ScoreSet } from '../types'
+import type { Item, Experiment, ChecklistItem, ScoreSet, ContentItem, Campaign, PlatformContent, AssetRef } from '../types'
 
 const DAY = 86_400_000
 // Seed dates are anchored around "today" (2026-08-17) so "x days ago" reads naturally.
@@ -554,3 +554,495 @@ const experimentSeeds: Experiment[] = [
 
 export const seedItems: Item[] = [...ideaSeeds, ...pipelineSeeds, ...publishedSeeds]
 export const seedExperiments: Experiment[] = experimentSeeds
+
+// ---------------------------------------------------------------------------
+// V2 — Content concepts (independent of ideas & experiments)
+// ---------------------------------------------------------------------------
+
+const seedContents: ContentItem[] = [
+  {
+    id: 'content-1',
+    title: 'Automate my entire publishing pipeline with one Make.com workflow',
+    concept:
+      'A single Make.com scenario that turns a finished script into scheduled posts across Instagram, YouTube, LinkedIn and X — assets, captions, hashtags and a Velgic publishing manifest included.',
+    origin: 'idea',
+    audience: 'Technical creators',
+    contentType: 'tutorial',
+    format: 'Text + screen-recording tutorial',
+    hook: 'I replaced 6 hours of weekly posting busywork with one Make.com workflow — here is the exact blueprint.',
+    draft:
+      'Intro: the five manual steps every creator repeats per post. Middle: the scenario, node by node. Outro: export the Velgic manifest as the deliverable.',
+    notes: 'Linked to idea-2. Ship the manifest export as the call to action.',
+    status: 'ready',
+    linkedIdeaId: 'idea-2',
+    linkedExperimentId: null,
+    createdAt: iso(6),
+    updatedAt: iso(1),
+  },
+  {
+    id: 'content-2',
+    title: 'I built a working CRUD app in 54 minutes with an AI editor',
+    concept:
+      'A 54-minute timed build of an inventory tracker with auth, DB and deploy, told as a speedrun — including the three manual fixes and where the AI saved time.',
+    origin: 'experiment',
+    audience: 'Developers',
+    contentType: 'youtube_short',
+    format: 'Under-60s vertical Short + link to the full write-up',
+    hook: 'I built and deployed a CRUD app in 54 minutes. Here is the timer, the three bugs, and where the AI saved me.',
+    draft: '',
+    notes: 'From exp-3. Reuse the timer footage and the three manual fixes as the spine.',
+    status: 'draft',
+    linkedIdeaId: null,
+    linkedExperimentId: 'exp-3',
+    createdAt: iso(4),
+    updatedAt: iso(4),
+  },
+  {
+    id: 'content-3',
+    title: 'Why AI agents get stuck in loops',
+    concept:
+      'Agents get stuck in loops because their context breaks down, not their reasoning. Anatomy of the failure mode plus three fixes: checkpointing, memory compaction, and explicit exit conditions.',
+    origin: 'observation',
+    audience: 'AI builders',
+    contentType: 'short_video',
+    format: 'Vertical short-form, under 60s',
+    hook: 'Your AI agent is not stuck in a loop — its memory is. Here is the fix.',
+    draft: 'Hook → the loop clip → anatomy (3 causes, ~10s each) → the fixes → CTA.',
+    notes: '',
+    status: 'ready',
+    linkedIdeaId: null,
+    linkedExperimentId: null,
+    createdAt: iso(5),
+    updatedAt: iso(0),
+  },
+  {
+    id: 'content-4',
+    title: 'Top open-source alternatives for content creators',
+    concept:
+      'Free, open-source replacements for the paid creator stack — video editing, design, hosting, analytics — each with one honest caveat, framed as "you trade money for setup time".',
+    origin: 'research',
+    audience: 'Technical creators',
+    contentType: 'short_video',
+    format: 'Vertical short-form, under 60s',
+    hook: 'You do not need to pay for your creator stack. Here are the open-source tools I actually use.',
+    draft: '',
+    notes: 'V2 end-to-end test case: one content concept, four platforms, independent platform statuses.',
+    status: 'in_production',
+    linkedIdeaId: null,
+    linkedExperimentId: null,
+    createdAt: iso(9),
+    updatedAt: iso(6),
+  },
+]
+
+// ---------------------------------------------------------------------------
+// V2 — Campaigns
+// ---------------------------------------------------------------------------
+
+const seedCampaigns: Campaign[] = [
+  {
+    id: 'camp-1',
+    name: 'Make.com publishing pipeline — launch week',
+    description: 'Launch week distribution for the publishing pipeline tutorial.',
+    contentId: 'content-1',
+    platforms: ['instagram', 'youtube', 'linkedin', 'x'],
+    status: 'partially_published',
+    createdAt: iso(4),
+    updatedAt: iso(1),
+  },
+  {
+    id: 'camp-2',
+    name: '54-minute CRUD app speedrun',
+    description: 'Short + thread from the CRUD experiment.',
+    contentId: 'content-2',
+    platforms: ['youtube', 'x'],
+    status: 'draft',
+    createdAt: iso(3),
+    updatedAt: iso(3),
+  },
+  {
+    id: 'camp-3',
+    name: 'AI agents stuck in loops',
+    description: 'One concept, four platforms.',
+    contentId: 'content-3',
+    platforms: ['instagram', 'youtube', 'linkedin', 'x'],
+    status: 'draft',
+    createdAt: iso(2),
+    updatedAt: iso(0),
+  },
+  {
+    id: 'camp-4',
+    name: 'Top Open Source Alternatives',
+    description: 'One content concept, distributed across four platforms.',
+    contentId: 'content-4',
+    platforms: ['instagram', 'youtube', 'linkedin', 'x'],
+    status: 'partially_published',
+    createdAt: iso(8),
+    updatedAt: iso(6),
+  },
+]
+
+// ---------------------------------------------------------------------------
+// V2 — Platform versions
+// ---------------------------------------------------------------------------
+
+const seedPlatformContentsBase: PlatformContent[] = [
+  // camp-1 — Make.com tutorial: IG ready, YT draft, LinkedIn published, X scheduled
+  {
+    id: 'pc-1',
+    campaignId: 'camp-1',
+    platform: 'instagram',
+    format: 'Reel',
+    status: 'ready',
+    schedule: { enabled: true, datetime: iso(-2), timezone: 'America/New_York' },
+    publishedUrl: null,
+    notes: '',
+    publishedAt: null,
+    assets: [{ asset_id: 'instagram-reel-01', filename: 'reel.mp4', type: 'video', reference: 'instagram/reel.mp4', provider: 'local', role: 'media' }],
+    instagram: {
+      caption:
+        'I automated my whole publishing pipeline with ONE Make.com workflow 🤖\n\nEvery finished script now becomes scheduled posts + captions + hashtags across 4 platforms.\n\nWould you use this? 👇',
+      hashtags: ['#buildinpublic', '#automation', '#creators', '#make'],
+      location: '',
+    },
+    createdAt: iso(4),
+    updatedAt: iso(1),
+  },
+  {
+    id: 'pc-2',
+    campaignId: 'camp-1',
+    platform: 'youtube',
+    format: 'Short',
+    status: 'draft',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: null,
+    notes: '',
+    publishedAt: null,
+    assets: [
+      { asset_id: 'youtube-short-01', filename: 'short.mp4', type: 'video', reference: 'youtube/short.mp4', provider: 'local', role: 'video' },
+      { asset_id: 'youtube-thumb-01', filename: 'thumb.jpg', type: 'image', reference: 'youtube/thumb.jpg', provider: 'local', role: 'thumbnail' },
+    ],
+    youtube: {
+      title: 'I automated my entire publishing pipeline with Make.com',
+      description:
+        'One workflow turns a finished script into scheduled posts across Instagram, YouTube, LinkedIn and X. Full scenario walkthrough inside.',
+      tags: ['make.com', 'automation', 'creator workflow'],
+    },
+    createdAt: iso(4),
+    updatedAt: iso(4),
+  },
+  {
+    id: 'pc-3',
+    campaignId: 'camp-1',
+    platform: 'linkedin',
+    format: 'Post',
+    status: 'published',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: 'https://www.linkedin.com/posts/velgic-publishing-pipeline',
+    notes: '',
+    publishedAt: iso(2),
+    assets: [],
+    linkedin: {
+      postText:
+        'I automated my entire publishing pipeline with one Make.com workflow.\n\nScript in → scheduled posts out, across Instagram, YouTube, LinkedIn and X.\n\nThe part that surprised me: the biggest win was the manifest — one JSON that describes every post, caption, asset and schedule. Now my publishing is reviewable like code.\n\n#BuildInPublic #Automation #CreatorEconomy',
+    },
+    createdAt: iso(3),
+    updatedAt: iso(2),
+  },
+  {
+    id: 'pc-4',
+    campaignId: 'camp-1',
+    platform: 'x',
+    format: 'Thread',
+    status: 'scheduled',
+    schedule: { enabled: true, datetime: iso(-1), timezone: 'America/New_York' },
+    publishedUrl: null,
+    notes: '',
+    publishedAt: null,
+    assets: [],
+    x: {
+      content:
+        'I replaced my entire weekly publishing routine with one Make.com workflow.\n\nThe routine was: 5 manual steps × 4 platforms = 20 decisions per post.\n\nNow: script in → manifest out. One JSON describes every post, caption, asset, and schedule across Instagram, YouTube, LinkedIn and X.\n\nPublishing became a code review, not a chore.',
+      isThread: true,
+    },
+    createdAt: iso(3),
+    updatedAt: iso(1),
+  },
+
+  // camp-2 — CRUD speedrun: YT Short + X post (draft)
+  {
+    id: 'pc-5',
+    campaignId: 'camp-2',
+    platform: 'youtube',
+    format: 'Short',
+    status: 'draft',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: null,
+    notes: '',
+    publishedAt: null,
+    assets: [],
+    youtube: {
+      title: 'A working CRUD app in 54 minutes with an AI editor',
+      description: 'Timed build: auth, DB, deploy — 54 minutes. The three manual fixes and where the AI saved time.',
+      tags: ['ai editor', 'cursor', 'build in public'],
+    },
+    createdAt: iso(3),
+    updatedAt: iso(3),
+  },
+  {
+    id: 'pc-6',
+    campaignId: 'camp-2',
+    platform: 'x',
+    format: 'Post',
+    status: 'draft',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: null,
+    notes: '',
+    publishedAt: null,
+    assets: [],
+    x: {
+      content:
+        'I built and deployed a CRUD app in 54 minutes with an AI editor.\n\n3 manual fixes, 2 hallucinated routes, 1 shipped app.\n\nThe bottleneck was never the model — it was my spec.',
+      isThread: false,
+    },
+    createdAt: iso(3),
+    updatedAt: iso(3),
+  },
+
+  // camp-3 — AI agents stuck in loops: the four-platform example campaign
+  {
+    id: 'pc-7',
+    campaignId: 'camp-3',
+    platform: 'instagram',
+    format: 'Reel',
+    status: 'ready',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: null,
+    notes: '',
+    publishedAt: null,
+    assets: [{ asset_id: 'instagram-reel-02', filename: 'loop.mp4', type: 'video', reference: 'instagram/loop.mp4', provider: 'local', role: 'media' }],
+    instagram: {
+      caption:
+        'POV: your AI agent keeps looping the same three steps 🤖\n\nIt is not stuck — its memory is. Here are the three fixes:\n1. Checkpoint progress\n2. Compact memory before it overflows\n3. Give it an exit condition\n\nSave this for your next agent build 👇',
+      hashtags: ['#ai', '#aiagents', '#buildinpublic', '#llm'],
+      location: '',
+    },
+    createdAt: iso(2),
+    updatedAt: iso(0),
+  },
+  {
+    id: 'pc-8',
+    campaignId: 'camp-3',
+    platform: 'youtube',
+    format: 'Short',
+    status: 'draft',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: null,
+    notes: '',
+    publishedAt: null,
+    assets: [
+      { asset_id: 'youtube-short-02', filename: 'agents-loop.mp4', type: 'video', reference: 'youtube/agents-loop.mp4', provider: 'local', role: 'video' },
+      { asset_id: 'youtube-thumb-02', filename: 'agents-loop-thumb.jpg', type: 'image', reference: 'youtube/agents-loop-thumb.jpg', provider: 'local', role: 'thumbnail' },
+    ],
+    youtube: {
+      title: 'Why AI agents get stuck in loops',
+      description: 'The loop is a symptom: the model lost the context it needs to make progress. Three fixes that actually work.',
+      tags: ['ai agents', 'llm', 'context engineering'],
+    },
+    createdAt: iso(2),
+    updatedAt: iso(2),
+  },
+  {
+    id: 'pc-9',
+    campaignId: 'camp-3',
+    platform: 'linkedin',
+    format: 'Post',
+    status: 'draft',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: null,
+    notes: '',
+    publishedAt: null,
+    assets: [],
+    linkedin: {
+      postText:
+        'Most agent failures are not reasoning failures. They are context failures.\n\nWhen an agent loops, it usually lost the information it needs to make progress — so it re-runs the only steps it still remembers.\n\nThree fixes we ship in production:\n• Checkpoint progress after every step\n• Compact memory before it overflows\n• Define explicit exit conditions\n\nThe loop is a symptom. Fix the memory, not the model.\n\n#AI #AIEngineering #LLM',
+    },
+    createdAt: iso(2),
+    updatedAt: iso(2),
+  },
+  {
+    id: 'pc-10',
+    campaignId: 'camp-3',
+    platform: 'x',
+    format: 'Thread',
+    status: 'ready',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: null,
+    notes: '',
+    publishedAt: null,
+    assets: [],
+    x: {
+      content:
+        'Your AI agent is not stuck in a loop — its memory is.\n\nThe loop is a symptom: the model lost the context it needs to make progress, so it re-runs the only steps it still remembers.\n\nThree fixes:\n1. Checkpoint progress after every step.\n2. Compact memory before it overflows.\n3. Define explicit exit conditions.\n\nThe loop is a symptom. Fix the memory, not the model.',
+      isThread: true,
+    },
+    createdAt: iso(2),
+    updatedAt: iso(0),
+  },
+]
+
+// ---------------------------------------------------------------------------
+// camp-4 — Top open-source alternatives: the four-platform test campaign
+// (Instagram published, YouTube scheduled, LinkedIn ready, X draft —
+//  platform statuses are independent by design)
+// ---------------------------------------------------------------------------
+
+const seedPlatformContentsCamp4: PlatformContent[] = [
+  {
+    id: 'pc-11',
+    campaignId: 'camp-4',
+    platform: 'instagram',
+    format: 'Reel',
+    status: 'published',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: 'https://www.instagram.com/reel/oss-creators',
+    publishedAt: iso(6),
+    assets: [
+      {
+        asset_id: 'instagram-reel-03',
+        filename: 'oss-reel.mp4',
+        type: 'video',
+        reference: 'instagram/oss-reel.mp4',
+        provider: 'local',
+        role: 'media',
+        mimeType: 'video/mp4',
+        size: 24_800_000,
+        duration: 42,
+      },
+    ],
+    notes: 'Published from the app manually — analytics in platform insights.',
+    instagram: {
+      caption:
+        'You do not need to pay for your creator stack 🤝\n\nEvery paid tool I replaced with an open-source alternative — and the one caveat that keeps me honest.\n\nSave this for your next setup 👇',
+      hashtags: ['#opensource', '#creators', '#buildinpublic'],
+      location: '',
+    },
+    createdAt: iso(8),
+    updatedAt: iso(6),
+  },
+  {
+    id: 'pc-12',
+    campaignId: 'camp-4',
+    platform: 'youtube',
+    format: 'Short',
+    status: 'scheduled',
+    schedule: { enabled: true, datetime: iso(-1), timezone: 'Asia/Kolkata' },
+    publishedUrl: null,
+    publishedAt: null,
+    assets: [
+      {
+        asset_id: 'youtube-short-03',
+        filename: 'oss-short.mp4',
+        type: 'video',
+        reference: 'youtube/oss-short.mp4',
+        provider: 'local',
+        role: 'video',
+        mimeType: 'video/mp4',
+        size: 24_800_000,
+        duration: 42,
+      },
+      {
+        asset_id: 'youtube-thumb-03',
+        filename: 'oss-thumb.jpg',
+        type: 'image',
+        reference: 'youtube/oss-thumb.jpg',
+        provider: 'local',
+        role: 'thumbnail',
+        mimeType: 'image/jpeg',
+        size: 320_000,
+        duration: null,
+      },
+    ],
+    notes: 'Thumbnail variant A/B is running via the experiment log.',
+    youtube: {
+      title: 'Top open-source alternatives for content creators',
+      description:
+        'The free, open-source replacements for your paid creator stack — video editing, design, hosting, analytics — with one honest caveat per tool.',
+      tags: ['open source', 'creator tools', 'oss'],
+    },
+    createdAt: iso(8),
+    updatedAt: iso(7),
+  },
+  {
+    id: 'pc-13',
+    campaignId: 'camp-4',
+    platform: 'linkedin',
+    format: 'Post',
+    status: 'ready',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: null,
+    publishedAt: null,
+    assets: [],
+    notes: '',
+    linkedin: {
+      postText:
+        'You do not need a paid subscription for every part of your creator stack.\n\nEvery tool I replaced with an open-source alternative — video editing, design, hosting, analytics — and the one honest caveat for each.\n\nThe caveat pattern: free means you trade money for setup time.\n\n#OpenSource #BuildInPublic #CreatorEconomy',
+    },
+    createdAt: iso(8),
+    updatedAt: iso(8),
+  },
+  {
+    id: 'pc-14',
+    campaignId: 'camp-4',
+    platform: 'x',
+    format: 'Thread',
+    status: 'draft',
+    schedule: { enabled: false, datetime: null, timezone: null },
+    publishedUrl: null,
+    publishedAt: null,
+    assets: [],
+    notes: '',
+    x: {
+      content:
+        'You do not need to pay for your creator stack.\n\nEvery paid tool I replaced with an open-source alternative — and the one caveat that keeps me honest.\n\nVideo editing, design, hosting, analytics: there is an open-source option for each.\n\nThe caveat: free means you trade money for setup time. Bookmark the ones worth that trade.',
+      isThread: true,
+    },
+    createdAt: iso(8),
+    updatedAt: iso(8),
+  },
+]
+
+const seedPlatformContents: PlatformContent[] = [...seedPlatformContentsBase, ...seedPlatformContentsCamp4]
+
+// ---------------------------------------------------------------------------
+// Asset library — reusable, reference-only assets (no binary media).
+// Derived from the seeded platform versions (deduplicated by asset_id) plus
+// one unused brand asset to demonstrate library-only entries.
+// ---------------------------------------------------------------------------
+
+const seedAssets: AssetRef[] = (() => {
+  const map = new Map<string, AssetRef>()
+  for (const pc of seedPlatformContents) {
+    for (const a of pc.assets) {
+      if (!map.has(a.asset_id)) {
+        map.set(a.asset_id, { ...a, createdAt: a.createdAt ?? pc.createdAt, notes: a.notes ?? '' })
+      }
+    }
+  }
+  map.set('brand-kit-01', {
+    asset_id: 'brand-kit-01',
+    filename: 'brand-kit.pdf',
+    type: 'document',
+    reference: 'brand/brand-kit.pdf',
+    provider: 'local',
+    role: null,
+    mimeType: 'application/pdf',
+    size: 1_200_000,
+    duration: null,
+    createdAt: iso(14),
+    notes: 'Brand kit — not yet referenced by any campaign.',
+  })
+  return [...map.values()]
+})()
+
+export { seedContents, seedCampaigns, seedPlatformContents, seedAssets }
