@@ -18,6 +18,7 @@ const RULES = [
   'Do not provide explanations, commentary, or any text outside the JSON.',
   'Do not invent assets. Only reference the asset references provided below.',
   'Do not invent URLs. Use null when a published URL is unknown.',
+  'Do not invent dates. Only use the schedule datetimes provided below.',
   'Use null for unavailable optional values.',
   'Follow the Velgic schema exactly — keep every required field and its type.',
   'Preserve provided asset references (asset_id, filename, type, reference) unchanged.',
@@ -78,6 +79,7 @@ export function buildPublishPrompt(args: {
     ['{{CONTENT_TYPE}}', content?.contentType ?? ''],
     ['{{CONTENT_FORMAT}}', content?.format ?? ''],
     ['{{TARGET_AUDIENCE}}', content?.audience ?? ''],
+    ['{{CONTENT_STATUS}}', content?.status ?? ''],
     ['{{BRAND_VOICE}}', ''],
     ['{{PLATFORMS}}', platforms],
     ['{{FORMATS}}', formats],
@@ -93,6 +95,7 @@ export function buildPublishPrompt(args: {
   }
   lines.push('')
   lines.push(`CAMPAIGN NAME: ${campaign.name || '{{CAMPAIGN_NAME}}'}`)
+  lines.push(`CAMPAIGN STATUS: ${campaign.status || '{{CAMPAIGN_STATUS}}'}`)
   if (campaign.description) lines.push(`CAMPAIGN DESCRIPTION: ${campaign.description}`)
 
   // Current platform text, so the AI can preserve/improve rather than invent.

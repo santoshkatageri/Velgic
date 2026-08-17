@@ -115,8 +115,14 @@ export type ContentTypeKey =
   | 'article'
   | 'tutorial'
 
-/** Publishing lifecycle shared by content concepts and platform versions. */
+/** Publishing lifecycle shared by platform versions (independent per platform). */
 export type PublishStatus = 'draft' | 'ready' | 'scheduled' | 'published' | 'failed'
+
+/** Content concept status — separate from the Pipeline stages by design. */
+export type ContentStatus = 'draft' | 'in_production' | 'ready' | 'published' | 'archived'
+
+/** Campaign distribution status — separate from Content and Pipeline status. */
+export type CampaignStatus = 'draft' | 'ready' | 'partially_published' | 'published' | 'archived'
 
 /** Supported publishing platforms (extensible — see PLATFORM_META). */
 export type PlatformKey = 'instagram' | 'youtube' | 'linkedin' | 'x'
@@ -136,6 +142,12 @@ export interface AssetRef {
   provider: string
   /** Platform role: 'video' | 'thumbnail' | 'media' | null. */
   role: string | null
+  /** Optional technical metadata — never required, never embedded media. */
+  mimeType?: string | null
+  /** Size in bytes. */
+  size?: number | null
+  /** Duration in seconds (video/audio). */
+  duration?: number | null
 }
 
 export interface ScheduleInfo {
@@ -179,6 +191,7 @@ export interface PlatformContent {
   publishedUrl: string | null
   publishedAt: string | null
   assets: AssetRef[]
+  notes: string
   instagram?: InstagramMetadata
   youtube?: YoutubeMetadata
   linkedin?: LinkedInMetadata
@@ -199,7 +212,7 @@ export interface ContentItem {
   hook: string
   draft: string
   notes: string
-  status: PublishStatus
+  status: ContentStatus
   linkedIdeaId: string | null
   linkedExperimentId: string | null
   createdAt: string
@@ -212,6 +225,9 @@ export interface Campaign {
   name: string
   description: string
   contentId: string
+  /** Platform keys this campaign distributes to (mirrored from its platform versions). */
+  platforms: PlatformKey[]
+  status: CampaignStatus
   createdAt: string
   updatedAt: string
 }

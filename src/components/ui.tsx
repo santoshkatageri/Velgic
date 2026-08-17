@@ -2,9 +2,9 @@ import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNo
 import { createPortal } from 'react-dom'
 import { useEffect } from 'react'
 import { cx, clamp } from '../lib/utils'
-import { CATEGORY_COLORS, PUBLISH_STATUS_META } from '../lib/constants'
-import { publishStatusTone } from '../lib/content'
-import type { Priority, Stage, PublishStatus, ContentOrigin } from '../types'
+import { CAMPAIGN_STATUS_META, CATEGORY_COLORS, CONTENT_STATUS_META, PUBLISH_STATUS_META } from '../lib/constants'
+import { campaignStatusTone, contentStatusTone, publishStatusTone } from '../lib/content'
+import type { Priority, Stage, PublishStatus, ContentOrigin, ContentStatus, CampaignStatus } from '../types'
 import { useUI } from '../store/uiStore'
 import { IconClose } from './icons'
 
@@ -90,6 +90,14 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
 
 export function PublishStatusBadge({ status }: { status: PublishStatus }) {
   return <Badge tone={publishStatusTone(status)}>{PUBLISH_STATUS_META[status].label}</Badge>
+}
+
+export function ContentStatusBadge({ status }: { status: ContentStatus }) {
+  return <Badge tone={contentStatusTone(status)}>{CONTENT_STATUS_META[status].label}</Badge>
+}
+
+export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
+  return <Badge tone={campaignStatusTone(status)}>{CAMPAIGN_STATUS_META[status].label}</Badge>
 }
 
 type BadgeTone = 'neutral' | 'accent' | 'green' | 'amber' | 'red' | 'violet' | 'sky' | 'cyan' | 'pink' | 'emerald' | 'rose' | 'lime'

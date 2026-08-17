@@ -8,6 +8,8 @@ import type {
   PublishStatus,
   PlatformKey,
   AssetType,
+  ContentStatus,
+  CampaignStatus,
 } from '../types'
 
 export const CATEGORIES = [
@@ -160,6 +162,28 @@ export const PUBLISH_STATUS_META: Record<PublishStatus, { label: string }> = {
   failed: { label: 'Failed' },
 }
 
+/** Content concept lifecycle — independent of the production Pipeline stages. */
+export const CONTENT_STATUSES: ContentStatus[] = ['draft', 'in_production', 'ready', 'published', 'archived']
+
+export const CONTENT_STATUS_META: Record<ContentStatus, { label: string }> = {
+  draft: { label: 'Draft' },
+  in_production: { label: 'In Production' },
+  ready: { label: 'Ready' },
+  published: { label: 'Published' },
+  archived: { label: 'Archived' },
+}
+
+/** Campaign distribution lifecycle — independent of Content and Pipeline status. */
+export const CAMPAIGN_STATUSES: CampaignStatus[] = ['draft', 'ready', 'partially_published', 'published', 'archived']
+
+export const CAMPAIGN_STATUS_META: Record<CampaignStatus, { label: string }> = {
+  draft: { label: 'Draft' },
+  ready: { label: 'Ready' },
+  partially_published: { label: 'Partially Published' },
+  published: { label: 'Published' },
+  archived: { label: 'Archived' },
+}
+
 export const PLATFORM_KEYS: PlatformKey[] = ['instagram', 'youtube', 'linkedin', 'x']
 
 export const PLATFORM_META: Record<
@@ -169,21 +193,21 @@ export const PLATFORM_META: Record<
   instagram: {
     label: 'Instagram',
     composerUrl: 'https://www.instagram.com/',
-    formats: ['Reel', 'Carousel', 'Post', 'Story', 'Video'],
+    formats: ['Reel', 'Carousel', 'Post'],
     defaultFormat: 'Reel',
     hint: 'Asset, caption, hashtags, location',
   },
   youtube: {
     label: 'YouTube',
     composerUrl: 'https://studio.youtube.com/',
-    formats: ['Short', 'Video', 'Live'],
+    formats: ['Short', 'Video'],
     defaultFormat: 'Short',
     hint: 'Video + thumbnail assets, title, description, tags',
   },
   linkedin: {
     label: 'LinkedIn',
     composerUrl: 'https://www.linkedin.com/feed/',
-    formats: ['Post', 'Article', 'Carousel', 'Video', 'Newsletter'],
+    formats: ['Post', 'Article'],
     defaultFormat: 'Post',
     hint: 'Post text, media assets',
   },

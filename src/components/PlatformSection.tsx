@@ -108,6 +108,36 @@ function AssetEditor({
             placeholder={`${platform}/reel.mp4`}
           />
         </Field>
+        <div className="asset-box__optional">
+          <Field label="MIME type" hint="Optional">
+            <Input
+              className="input--mono"
+              value={asset.mimeType ?? ''}
+              onChange={(e) => onSave({ ...asset, mimeType: e.target.value || null })}
+              placeholder="video/mp4"
+            />
+          </Field>
+          <Field label="Size (bytes)" hint="Optional">
+            <Input
+              className="input--mono"
+              type="number"
+              min={0}
+              value={asset.size ?? ''}
+              onChange={(e) => onSave({ ...asset, size: e.target.value === '' ? null : Number(e.target.value) })}
+              placeholder="24800000"
+            />
+          </Field>
+          <Field label="Duration (sec)" hint="Optional">
+            <Input
+              className="input--mono"
+              type="number"
+              min={0}
+              value={asset.duration ?? ''}
+              onChange={(e) => onSave({ ...asset, duration: e.target.value === '' ? null : Number(e.target.value) })}
+              placeholder="42"
+            />
+          </Field>
+        </div>
       </div>
     </div>
   )
@@ -201,8 +231,7 @@ function StatusControls({ pc, onUpdate }: { pc: PlatformContent; onUpdate: (patc
             variant="subtle"
             size="sm"
             onClick={() => mark('scheduled')}
-            disabled={!(pc.schedule.enabled && pc.schedule.datetime)}
-            title={pc.schedule.enabled && pc.schedule.datetime ? 'Mark as scheduled' : 'Set a schedule datetime first'}
+            title="Mark as scheduled — enables the schedule with a default datetime if none is set"
           >
             Mark scheduled
           </Button>
@@ -500,6 +529,10 @@ export function PlatformSection({
             </div>
           </>
         )}
+
+        <Field label="Notes" hint="Version-specific notes — exported to the manifest.">
+          <Textarea rows={2} value={pc.notes} onChange={(e) => onUpdate({ notes: e.target.value })} placeholder="e.g. Publish after the newsletter goes out…" />
+        </Field>
 
         <ScheduleEditor schedule={pc.schedule} status={pc.status} onUpdate={(schedule) => onUpdate({ schedule })} />
 

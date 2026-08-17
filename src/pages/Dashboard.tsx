@@ -4,11 +4,11 @@ import { useStore } from '../store/useStore'
 import { useUI } from '../store/uiStore'
 import { getRecommendation } from '../lib/recommend'
 import { opportunityScore } from '../lib/scoring'
-import { EFFORT_LABELS, STAGES, STAGE_META, CONTENT_TYPE_META, PUBLISH_STATUSES, PUBLISH_STATUS_META } from '../lib/constants'
+import { EFFORT_LABELS, STAGES, STAGE_META, CONTENT_TYPE_META, CONTENT_STATUSES, CONTENT_STATUS_META } from '../lib/constants'
 import { CATEGORIES } from '../lib/constants'
-import { ideaFormatToContentType, publishStatusTone } from '../lib/content'
+import { contentStatusTone, ideaFormatToContentType } from '../lib/content'
 import { uid, nowIso, formatNumber, timeAgo } from '../lib/utils'
-import { Button, Card, CardHeader, Badge, CategoryBadge, PublishStatusBadge, Select, Textarea } from '../components/ui'
+import { Button, Card, CardHeader, Badge, CategoryBadge, ContentStatusBadge, Select, Textarea } from '../components/ui'
 import { IconSparkle, IconCapture, IconBolt, IconCheck, IconChevronRight, IconFlask, IconDoc, IconMegaphone } from '../components/icons'
 import type { Item } from '../types'
 
@@ -39,7 +39,7 @@ export function Dashboard() {
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 4)
 
-  const statusCounts = PUBLISH_STATUSES.map((s) => ({
+  const statusCounts = CONTENT_STATUSES.map((s) => ({
     status: s,
     count: contents.filter((c) => c.status === s).length,
   }))
@@ -331,10 +331,10 @@ export function Dashboard() {
             <div className="pipe-summary">
               {statusCounts.map(({ status, count }) => (
                 <div key={status} className="pipe-row">
-                  <span className="pipe-row__label">{PUBLISH_STATUS_META[status].label}</span>
+                  <span className="pipe-row__label">{CONTENT_STATUS_META[status].label}</span>
                   <div className="pipe-row__track">
                     <div
-                      className={`pipe-row__fill pipe-row__fill--${publishStatusTone(status)}`}
+                      className={`pipe-row__fill pipe-row__fill--${contentStatusTone(status)}`}
                       style={{ width: `${(count / maxStatusCount) * 100}%` }}
                     />
                   </div>
@@ -381,7 +381,7 @@ export function Dashboard() {
                           <IconMegaphone size={11} /> {campaignCount}
                         </Badge>
                       )}
-                      <PublishStatusBadge status={c.status} />
+                      <ContentStatusBadge status={c.status} />
                     </Link>
                   )
                 })}

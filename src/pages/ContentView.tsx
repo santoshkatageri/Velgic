@@ -6,10 +6,11 @@ import {
   AUDIENCES,
   CONTENT_ORIGINS,
   CONTENT_ORIGIN_META,
+  CONTENT_STATUSES,
+  CONTENT_STATUS_META,
   CONTENT_TYPES,
   CONTENT_TYPE_META,
   PLATFORM_META,
-  PUBLISH_STATUSES,
   PUBLISH_STATUS_META,
 } from '../lib/constants'
 import { campaignReadiness, nextScheduled, publishStatusTone, suggestedPlatforms } from '../lib/content'
@@ -17,13 +18,14 @@ import { formatDate, formatSchedule } from '../lib/utils'
 import {
   Badge,
   Button,
+  CampaignStatusBadge,
   Card,
+  ContentStatusBadge,
   EmptyState,
   Field,
   Input,
   Modal,
   OriginBadge,
-  PublishStatusBadge,
   Select,
   Textarea,
   useConfirm,
@@ -43,7 +45,7 @@ import {
   IconPlus,
   IconTrash,
 } from '../components/icons'
-import type { ContentOrigin, ContentTypeKey, PlatformKey, PublishStatus } from '../types'
+import type { ContentOrigin, ContentStatus, ContentTypeKey, PlatformKey } from '../types'
 
 export function ContentView() {
   const { id } = useParams<{ id: string }>()
@@ -125,7 +127,7 @@ export function ContentView() {
               <Badge tone="neutral">{CONTENT_TYPE_META[content.contentType].label}</Badge>
               <Badge tone="neutral">{content.audience}</Badge>
               {content.format && <Badge tone="neutral">{content.format}</Badge>}
-              <PublishStatusBadge status={content.status} />
+              <ContentStatusBadge status={content.status} />
               {linkedIdea && (
                 <Link to={`/items/${linkedIdea.id}`}>
                   <Badge tone="accent" className="badge--link">
@@ -197,11 +199,11 @@ export function ContentView() {
                   ))}
                 </Select>
               </Field>
-              <Field label="Status">
-                <Select value={content.status} onChange={(e) => updateContent(content.id, { status: e.target.value as PublishStatus })}>
-                  {PUBLISH_STATUSES.map((s) => (
+              <Field label="Status" hint="Independent of the production Pipeline stages.">
+                <Select value={content.status} onChange={(e) => updateContent(content.id, { status: e.target.value as ContentStatus })}>
+                  {CONTENT_STATUSES.map((s) => (
                     <option key={s} value={s}>
-                      {PUBLISH_STATUS_META[s].label}
+                      {CONTENT_STATUS_META[s].label}
                     </option>
                   ))}
                 </Select>
@@ -274,6 +276,7 @@ export function ContentView() {
                         </div>
                       </div>
                       <div className="campaign-list__side">
+                        <CampaignStatusBadge status={campaign.status} />
                         {next && (
                           <span className="sched-inline">
                             <IconClock size={11} /> {formatSchedule(next.datetime, next.pc.schedule.timezone)}

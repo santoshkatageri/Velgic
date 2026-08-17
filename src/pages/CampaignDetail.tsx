@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store/useStore'
-import { PLATFORM_KEYS, PLATFORM_META } from '../lib/constants'
-import { campaignReadiness, nextScheduled } from '../lib/content'
-import { exportCampaignManifest } from '../lib/manifest'
+import { CAMPAIGN_STATUSES, CAMPAIGN_STATUS_META, PLATFORM_KEYS, PLATFORM_META } from '../lib/constants'
+import { campaignReadiness, deriveCampaignStatus, nextScheduled } from '../lib/content'
+import { copyCampaignManifest, exportCampaignManifest } from '../lib/manifest'
 import { formatDate, formatSchedule } from '../lib/utils'
-import { Badge, Button, Card, EmptyState, Field, Input, useConfirm } from '../components/ui'
+import { Badge, Button, CampaignStatusBadge, Card, EmptyState, Field, Input, Select, useConfirm } from '../components/ui'
 import { PlatformSection } from '../components/PlatformSection'
 import { PublishPromptModal } from '../components/PublishPromptModal'
 import { ImportManifestModal } from '../components/ImportManifestModal'
 import {
   IconArrowLeft,
   IconClock,
+  IconCopy,
   IconDoc,
   IconDownload,
   IconJson,
@@ -21,7 +22,7 @@ import {
   IconSparkle,
   IconTrash,
 } from '../components/icons'
-import type { PlatformKey } from '../types'
+import type { CampaignStatus, PlatformKey } from '../types'
 
 export function CampaignDetail() {
   const { id } = useParams<{ id: string }>()
@@ -39,6 +40,7 @@ export function CampaignDetail() {
   const [promptOpen, setPromptOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [copiedJson, setCopiedJson] = useState(false)
 
   const campaign = campaigns.find((c) => c.id === id)
   const content = campaign ? (contents.find((c) => c.id === campaign.contentId) ?? null) : null
@@ -108,6 +110,7 @@ export function CampaignDetail() {
                     <IconDoc size={11} /> {content.title}
                   </Badge>
                 </Link>
+                <CampaignStatusBadge status={campaign.status} />
                 <Badge tone="neutral">
                   {pcs.length} platform version{pcs.length === 1 ? '' : 's'}
                 </Badge>
@@ -147,6 +150,23 @@ export function CampaignDetail() {
             </Field>
           </div>
           <div className="campaign-head__actions">
+            <Field label="Campaign status" className="campaign-head__status">
+              <Select width={190} value={campaign.status} onChange={(e) => updateCampaign(campaign.id, { status: e.target.value as CampaignStatus })}>
+                {CAMPAIGN_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {CAMPAIGN_STATUS_META[s].label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Button
+              variant="subtle"
+              size="sm"
+              title="Derive the campaign status from its platform versions"
+              onClick={() => updateCampaign(campaign.id, { status: deriveCampaignStatus(pcs) })}
+            >
+              Derive status
+            </Button>
             <div className="add-platform">
               <Button variant="outline" size="sm" icon={<IconPlus size={13} />} onClick={() => setAddOpen((v) => !v)}>
                 Add platform
@@ -173,6 +193,21 @@ export function CampaignDetail() {
             </Button>
             <Button variant="outline" size="sm" icon={<IconDownload size={13} />} onClick={handleExport} disabled={pcs.length === 0}>
               Export manifest
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<IconCopy size={13} />}
+              disabled={pcs.length === 0}
+              onClick={async () => {
+                const ok = await copyCampaignManifest(campaign, content, pcs)
+                if (ok) {
+                  setCopiedJson(true)
+                  window.setTimeout(() => setCopiedJson(false), 1800)
+                }
+              }}
+            >
+              {copiedJson ? 'Copied ✓' : 'Copy JSON'}
             </Button>
             <Button variant="primary" size="sm" icon={<IconSparkle size={13} />} onClick={() => setPromptOpen(true)} disabled={pcs.length === 0}>
               Generate AI prompt

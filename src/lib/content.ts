@@ -1,4 +1,12 @@
-import type { AssetRef, ContentItem, ContentTypeKey, PlatformContent, PlatformKey, PublishStatus } from '../types'
+import type {
+  AssetRef,
+  CampaignStatus,
+  ContentStatus,
+  ContentTypeKey,
+  PlatformContent,
+  PlatformKey,
+  PublishStatus,
+} from '../types'
 import { PLATFORM_META } from './constants'
 import { nowIso, uid } from './utils'
 
@@ -73,6 +81,7 @@ export function blankPlatformContent(
     publishedUrl: null,
     publishedAt: null,
     assets: [],
+    notes: '',
     createdAt: now,
     updatedAt: now,
   }
@@ -103,6 +112,9 @@ export function blankAssetRef(platform: PlatformKey, role: string, existing: Ass
     reference: '',
     provider: 'local',
     role,
+    mimeType: null,
+    size: null,
+    duration: null,
   }
 }
 
@@ -227,7 +239,7 @@ export function nextScheduled(pcs: PlatformContent[]): { pc: PlatformContent; da
 /*  Misc                                                                       */
 /* -------------------------------------------------------------------------- */
 
-export type ContentStatusTone = 'neutral' | 'accent' | 'violet' | 'green' | 'red'
+export type ContentStatusTone = 'neutral' | 'accent' | 'violet' | 'green' | 'red' | 'amber'
 
 export function publishStatusTone(status: PublishStatus): ContentStatusTone {
   switch (status) {
@@ -242,4 +254,65 @@ export function publishStatusTone(status: PublishStatus): ContentStatusTone {
     case 'failed':
       return 'red'
   }
+}
+
+export function contentStatusTone(status: ContentStatus): ContentStatusTone {
+  switch (status) {
+    case 'draft':
+      return 'neutral'
+    case 'in_production':
+      return 'amber'
+    case 'ready':
+      return 'accent'
+    case 'published':
+      return 'green'
+    case 'archived':
+      return 'neutral'
+  }
+}
+
+export function campaignStatusTone(status: CampaignStatus): ContentStatusTone {
+  switch (status) {
+    case 'draft':
+      return 'neutral'
+    case 'ready':
+      return 'accent'
+    case 'partially_published':
+      return 'violet'
+    case 'published':
+      return 'green'
+    case 'archived':
+      return 'neutral'
+  }
+}
+
+/**
+ * Derive a campaign's distribution status from its platform versions:
+ * all published → published, any published → partially_published,
+ * all ready (or better) → ready, otherwise draft. Archived stays manual.
+ */
+export function deriveCampaignStatus(pcs: PlatformContent[]): CampaignStatus {
+  if (pcs.length === 0) return 'draft'
+  const statuses = pcs.map((pc) => pc.status)
+  if (statuses.every((s) => s === 'published')) return 'published'
+  if (statuses.some((s) => s === 'published')) return 'partially_published'
+  if (statuses.every((s) => s === 'ready')) return 'ready'
+  return 'draft'
+}
+
+const CONTENT_STATUS_KEYS = new Set<ContentStatus>(['draft', 'in_production', 'ready', 'published', 'archived'])
+const CAMPAIGN_STATUS_KEYS = new Set<CampaignStatus>(['draft', 'ready', 'partially_published', 'published', 'archived'])
+
+/** Normalize a possibly-legacy content status to the current enum. */
+export function normalizeContentStatus(status: unknown): ContentStatus {
+  if (typeof status === 'string' && (CONTENT_STATUS_KEYS as Set<string>).has(status)) return status as ContentStatus
+  if (status === 'scheduled') return 'ready' // legacy alias
+  if (status === 'failed') return 'draft' // legacy alias
+  return 'draft'
+}
+
+/** Normalize a possibly-legacy campaign status to the current enum. */
+export function normalizeCampaignStatus(status: unknown, pcs: PlatformContent[]): CampaignStatus {
+  if (typeof status === 'string' && (CAMPAIGN_STATUS_KEYS as Set<string>).has(status)) return status as CampaignStatus
+  return deriveCampaignStatus(pcs)
 }

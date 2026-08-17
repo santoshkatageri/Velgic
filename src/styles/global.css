@@ -3085,3 +3085,30 @@ button {
     grid-column: auto;
   }
 }
+
+/* V2.1 refinements */
+.campaign-card__top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.campaign-head__status {
+  margin: 0;
+}
+
+.asset-box__optional {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding-top: 2px;
+  border-top: 1px dashed var(--border);
+}
+
+@media (max-width: 760px) {
+  .asset-box__optional {
+    grid-template-columns: 1fr;
+  }
+}

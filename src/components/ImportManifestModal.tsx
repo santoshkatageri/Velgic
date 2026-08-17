@@ -147,6 +147,10 @@ export function ImportManifestModal({
               <span className="import-preview__value">{manifest.campaign.content?.title ?? '—'}</span>
             </div>
             <div className="import-preview__cell">
+              <span className="import-preview__label">Campaign status</span>
+              <span className="import-preview__value">{manifest.campaign.status ?? 'derived from platforms'}</span>
+            </div>
+            <div className="import-preview__cell">
               <span className="import-preview__label">Platforms</span>
               <span className="import-preview__value">
                 {manifest.platforms.map((p) => `${p.platform} (${p.format}, ${p.status})`).join(' · ') || '—'}

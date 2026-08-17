@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import type { ContentItem, ContentOrigin, ContentTypeKey, PublishStatus } from '../types'
+import type { ContentItem, ContentOrigin, ContentStatus, ContentTypeKey } from '../types'
 import { useStore } from '../store/useStore'
 import { useUI, type ContentPrefill } from '../store/uiStore'
 import { uid, nowIso } from '../lib/utils'
-import { CONTENT_TYPES, CONTENT_TYPE_META, CONTENT_ORIGINS, CONTENT_ORIGIN_META, PUBLISH_STATUSES, PUBLISH_STATUS_META, AUDIENCES } from '../lib/constants'
+import { CONTENT_TYPES, CONTENT_TYPE_META, CONTENT_ORIGINS, CONTENT_ORIGIN_META, CONTENT_STATUSES, CONTENT_STATUS_META, AUDIENCES } from '../lib/constants'
 import { Button, Drawer, Field, Input, Textarea, Select } from './ui'
 
 function blankContent(prefill: ContentPrefill | null): ContentItem {
@@ -107,11 +107,11 @@ function ContentForm({ content, prefill, onClose }: { content: ContentItem | nul
             ))}
           </Select>
         </Field>
-        <Field label="Status">
-          <Select value={draft.status} onChange={(e) => set('status', e.target.value as PublishStatus)}>
-            {PUBLISH_STATUSES.map((s) => (
+        <Field label="Status" hint="Independent of the production Pipeline stages.">
+          <Select value={draft.status} onChange={(e) => set('status', e.target.value as ContentStatus)}>
+            {CONTENT_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {PUBLISH_STATUS_META[s].label}
+                {CONTENT_STATUS_META[s].label}
               </option>
             ))}
           </Select>

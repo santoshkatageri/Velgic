@@ -2,20 +2,25 @@ import type {
   AssetRef,
   AssetType,
   Campaign,
+  CampaignStatus,
   ContentItem,
+  ContentStatus,
   PlatformContent,
   PlatformKey,
   PublishStatus,
 } from '../types'
 import {
   ASSET_TYPES,
+  CAMPAIGN_STATUSES,
   CONTENT_ORIGINS,
+  CONTENT_STATUSES,
   CONTENT_TYPES,
   PLATFORM_KEYS,
   PLATFORM_META,
   PUBLISH_STATUSES,
 } from './constants'
-import { nowIso, uid } from './utils'
+import { deriveCampaignStatus, normalizeContentStatus } from './content'
+import { copyText, nowIso, uid } from './utils'
 
 /**
  * Velgic Publishing Manifest — canonical JSON interchange format.
@@ -24,6 +29,13 @@ import { nowIso, uid } from './utils'
  */
 
 export const MANIFEST_SCHEMA_VERSION = '1.0'
+
+/**
+ * Schema versions Velgic can import. New versions (1.1, 2.0, …) can be added
+ * here — with a per-version migrator in validateManifest — without rewriting
+ * the rest of the system.
+ */
+export const SUPPORTED_SCHEMA_VERSIONS: string[] = ['1.0']
 
 export const MANIFEST_ISSUE_CODES = [
   'INVALID_JSON',
@@ -37,6 +49,7 @@ export const MANIFEST_ISSUE_CODES = [
   'INVALID_STATUS',
   'INVALID_CONTENT_TYPE',
   'INVALID_METADATA',
+  'INVALID_PUBLISHED_URL',
 ] as const
 
 export type ManifestIssueCode = (typeof MANIFEST_ISSUE_CODES)[number]
@@ -58,6 +71,9 @@ export interface ManifestAssetRef {
   reference: string
   provider: string
   role: string | null
+  mimeType?: string | null
+  size?: number | null
+  duration?: number | null
 }
 
 export interface ManifestSchedule {
@@ -75,6 +91,7 @@ export interface ManifestPlatform {
   published_url: string | null
   published_at: string | null
   assets: ManifestAssetRef[]
+  notes: string | null
   /** Platform-specific metadata — see docs/velgic-publishing-manifest.md */
   metadata: Record<string, unknown>
 }
@@ -89,6 +106,7 @@ export interface VelgicManifest {
     id: string
     name: string
     description: string | null
+    status?: CampaignStatus
     content: {
       id: string
       title: string
@@ -100,7 +118,7 @@ export interface VelgicManifest {
       hook: string | null
       draft: string | null
       notes: string | null
-      status: PublishStatus
+      status: ContentStatus
       linked_idea_id: string | null
       linked_experiment_id: string | null
     } | null
@@ -120,6 +138,9 @@ function manifestAssets(assets: AssetRef[]): ManifestAssetRef[] {
     reference: a.reference,
     provider: a.provider || 'local',
     role: a.role ?? null,
+    mimeType: a.mimeType ?? null,
+    size: typeof a.size === 'number' ? a.size : null,
+    duration: typeof a.duration === 'number' ? a.duration : null,
   }))
 }
 
@@ -168,6 +189,7 @@ export function buildManifest(args: {
       id: campaign.id,
       name: campaign.name,
       description: campaign.description || null,
+      status: campaign.status,
       content: content
         ? {
             id: content.id,
@@ -199,6 +221,7 @@ export function buildManifest(args: {
       published_url: pc.publishedUrl,
       published_at: pc.publishedAt,
       assets: manifestAssets(pc.assets),
+      notes: pc.notes || null,
       metadata: manifestMetadata(pc),
     })),
   }
@@ -234,6 +257,15 @@ export function exportCampaignManifest(
   platformContents: PlatformContent[],
 ): void {
   downloadManifest(buildManifest({ campaign, content, platformContents }), `velgic-manifest-${manifestSlug(campaign.name)}.json`)
+}
+
+/** Build + copy the manifest JSON for a campaign. */
+export function copyCampaignManifest(
+  campaign: Campaign,
+  content: ContentItem | null,
+  platformContents: PlatformContent[],
+): Promise<boolean> {
+  return copyText(JSON.stringify(buildManifest({ campaign, content, platformContents }), null, 2))
 }
 
 /* -------------------------------------------------------------------------- */
@@ -276,11 +308,11 @@ export function validateManifest(value: unknown): ManifestIssue[] {
     add('UNSUPPORTED_SCHEMA_VERSION', '$.schema_version', 'Manifest is missing "schema_version".')
     return issues
   }
-  if (value.schema_version !== MANIFEST_SCHEMA_VERSION) {
+  if (!SUPPORTED_SCHEMA_VERSIONS.includes(value.schema_version)) {
     add(
       'UNSUPPORTED_SCHEMA_VERSION',
       '$.schema_version',
-      `Unsupported schema version "${String(value.schema_version)}". Velgic supports "${MANIFEST_SCHEMA_VERSION}".`,
+      `Unsupported schema version "${String(value.schema_version)}". Velgic supports: ${SUPPORTED_SCHEMA_VERSIONS.join(', ')}.`,
     )
     return issues
   }
@@ -311,6 +343,11 @@ export function validateManifest(value: unknown): ManifestIssue[] {
   if (campaign.description !== undefined && campaign.description !== null && !isString(campaign.description)) {
     add('INVALID_METADATA', '$.campaign.description', 'Campaign "description" must be a string or null.')
   }
+  if (campaign.status !== undefined && campaign.status !== null) {
+    if (!isString(campaign.status) || !(CAMPAIGN_STATUSES as string[]).includes(campaign.status)) {
+      add('INVALID_STATUS', '$.campaign.status', `Invalid campaign status "${String(campaign.status)}".`)
+    }
+  }
 
   const content = campaign.content
   if (!isObject(content)) {
@@ -336,7 +373,10 @@ export function validateManifest(value: unknown): ManifestIssue[] {
       add('INVALID_CONTENT_TYPE', '$.campaign.content.content_type', `Unknown content type "${content.content_type}".`)
     }
     if (content.status !== undefined && content.status !== null) {
-      if (!isString(content.status) || !(PUBLISH_STATUSES as string[]).includes(content.status)) {
+      // Current content statuses + legacy aliases (scheduled/failed) that are
+      // normalized on import.
+      const allowedContentStatuses = [...CONTENT_STATUSES, 'scheduled', 'failed'] as string[]
+      if (!isString(content.status) || !allowedContentStatuses.includes(content.status)) {
         add('INVALID_STATUS', '$.campaign.content.status', `Invalid content status "${String(content.status)}".`)
       }
     }
@@ -362,7 +402,8 @@ export function validateManifest(value: unknown): ManifestIssue[] {
       return
     }
 
-    // platform key + format
+    // platform key + format (format matching is case-insensitive; canonical
+    // casing is applied on import)
     const platform = p.platform
     if (!isPlatformKey(platform)) {
       add('INVALID_PLATFORM_FORMAT', `${path}.platform`, `Unknown platform "${String(platform)}".`)
@@ -371,7 +412,7 @@ export function validateManifest(value: unknown): ManifestIssue[] {
     const format = p.format
     if (!isString(format) || !format.trim()) {
       add('INVALID_PLATFORM_FORMAT', `${path}.format`, 'Platform "format" is required and must be a non-empty string.')
-    } else if (!PLATFORM_META[platform].formats.includes(format)) {
+    } else if (!PLATFORM_META[platform].formats.some((f) => f.toLowerCase() === format.trim().toLowerCase())) {
       add(
         'INVALID_PLATFORM_FORMAT',
         `${path}.format`,
@@ -405,11 +446,22 @@ export function validateManifest(value: unknown): ManifestIssue[] {
       }
     }
 
-    if (p.published_url !== undefined && p.published_url !== null && !isString(p.published_url)) {
-      add('INVALID_METADATA', `${path}.published_url`, '"published_url" must be a string or null.')
+    if (p.published_url !== undefined && p.published_url !== null) {
+      if (!isString(p.published_url)) {
+        add('INVALID_PUBLISHED_URL', `${path}.published_url`, '"published_url" must be a string or null.')
+      } else if (p.published_url.trim() !== '' && !/^https?:\/\/.+/i.test(p.published_url.trim())) {
+        add(
+          'INVALID_PUBLISHED_URL',
+          `${path}.published_url`,
+          `"published_url" must be a valid http(s) URL when present (got "${p.published_url}"). Use null when the post is not live yet.`,
+        )
+      }
     }
     if (p.published_at !== undefined && p.published_at !== null && !isValidIso(p.published_at)) {
       add('INVALID_DATETIME', `${path}.published_at`, '"published_at" must be a valid ISO 8601 datetime or null.')
+    }
+    if (p.notes !== undefined && p.notes !== null && !isString(p.notes)) {
+      add('INVALID_METADATA', `${path}.notes`, '"notes" must be a string or null.')
     }
 
     // assets
@@ -438,6 +490,15 @@ export function validateManifest(value: unknown): ManifestIssue[] {
         }
         if (asset.role !== undefined && asset.role !== null && !isString(asset.role)) {
           add('INVALID_ASSET_REFERENCE', `${apath}.role`, '"role" must be a string or null.')
+        }
+        for (const key of ['mimeType', 'size', 'duration'] as const) {
+          const v = asset[key]
+          if (key === 'mimeType' && v !== undefined && v !== null && !isString(v)) {
+            add('INVALID_ASSET_REFERENCE', `${apath}.mimeType`, '"mimeType" must be a string or null.')
+          }
+          if ((key === 'size' || key === 'duration') && v !== undefined && v !== null && typeof v !== 'number') {
+            add('INVALID_ASSET_REFERENCE', `${apath}.${key}`, `"${key}" must be a number or null.`)
+          }
         }
       })
     }
@@ -543,19 +604,10 @@ export function manifestToEntities(manifest: VelgicManifest, ctx: ImportContext)
     hook: c?.hook ?? '',
     draft: c?.draft ?? '',
     notes: c?.notes ?? '',
-    status: c?.status ?? 'draft',
+    status: normalizeContentStatus(c?.status),
     linkedIdeaId: c?.linked_idea_id && ctx.ideaIds.includes(c.linked_idea_id) ? c.linked_idea_id : null,
     linkedExperimentId:
       c?.linked_experiment_id && ctx.experimentIds.includes(c.linked_experiment_id) ? c.linked_experiment_id : null,
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  const campaign: Campaign = {
-    id: campaignId,
-    name: manifest.campaign.name,
-    description: manifest.campaign.description ?? '',
-    contentId,
     createdAt: now,
     updatedAt: now,
   }
@@ -565,11 +617,14 @@ export function manifestToEntities(manifest: VelgicManifest, ctx: ImportContext)
     const id = unique(p.id, takenPlatformIds)
     takenPlatformIds.push(id)
 
+    // Canonical (title-case) format.
+    const format = PLATFORM_META[p.platform].formats.find((f) => f.toLowerCase() === p.format.trim().toLowerCase()) ?? p.format
+
     const base: PlatformContent = {
       id,
       campaignId,
       platform: p.platform,
-      format: p.format,
+      format,
       status: p.status,
       schedule: {
         enabled: p.schedule.enabled,
@@ -585,7 +640,11 @@ export function manifestToEntities(manifest: VelgicManifest, ctx: ImportContext)
         reference: a.reference,
         provider: a.provider || 'local',
         role: a.role ?? null,
+        mimeType: a.mimeType ?? null,
+        size: typeof a.size === 'number' ? a.size : null,
+        duration: typeof a.duration === 'number' ? a.duration : null,
       })),
+      notes: p.notes ?? '',
       createdAt: now,
       updatedAt: now,
     }
@@ -627,6 +686,19 @@ export function manifestToEntities(manifest: VelgicManifest, ctx: ImportContext)
     }
   })
 
+  // Campaign status: use the manifest's value when valid, otherwise derive it
+  // from the imported platform versions. `platforms` mirrors the versions.
+  const campaign: Campaign = {
+    id: campaignId,
+    name: manifest.campaign.name,
+    description: manifest.campaign.description ?? '',
+    contentId,
+    platforms: [...new Set(platformContents.map((pc) => pc.platform))],
+    status: manifest.campaign.status ?? deriveCampaignStatus(platformContents),
+    createdAt: now,
+    updatedAt: now,
+  }
+
   return { content, campaign, platformContents }
 }
 
@@ -636,43 +708,46 @@ export function manifestToEntities(manifest: VelgicManifest, ctx: ImportContext)
 
 export const MANIFEST_SCHEMA_FIELDS = [
   `Top level: schema_version (string, always "${MANIFEST_SCHEMA_VERSION}"), manifest_id (string), generated_at (ISO 8601), timezone (IANA name or null), brand { name, voice, handle } (strings or null), campaign {…}, platforms [ … ].`,
-  `campaign: { id, name (non-empty string), description (string or null), content { id, title, concept, origin, audience, content_type, format, hook, draft, notes, status, linked_idea_id, linked_experiment_id } }.`,
+  `campaign: { id, name (non-empty string), description (string or null), status (optional, one of: ${CAMPAIGN_STATUSES.join(', ')}), content { id, title, concept, origin, audience, content_type, format, hook, draft, notes, status, linked_idea_id, linked_experiment_id } }.`,
   `content.origin must be one of: ${CONTENT_ORIGINS.join(', ')}.`,
   `content.content_type must be one of: ${CONTENT_TYPES.join(', ')}.`,
-  `content.status and platform.status must be one of: ${PUBLISH_STATUSES.join(', ')}.`,
-  `platforms[] entries: { platform, id, format, status, schedule { enabled, datetime, timezone }, published_url, published_at, assets [ … ], metadata { … } }.`,
+  `content.status must be one of: ${CONTENT_STATUSES.join(', ')}.`,
+  `platform.status must be one of: ${PUBLISH_STATUSES.join(', ')}.`,
+  `platforms[] entries: { platform, id, format, status, schedule { enabled, datetime, timezone }, published_url, published_at, assets [ … ], notes, metadata { … } }.`,
   `platform must be one of: ${PLATFORM_KEYS.join(', ')}.`,
-  `Allowed format per platform: ${PLATFORM_KEYS.map((k) => `${k} → ${PLATFORM_META[k].formats.join(' | ')}`).join('; ')}.`,
-  `assets[] entries: { asset_id, filename, type, reference, provider, role }. type must be one of: ${ASSET_TYPES.join(', ')}. role is "video" | "thumbnail" | "media" | null. Assets are references only — never embed media bytes.`,
+  `Allowed format per platform: ${PLATFORM_KEYS.map((k) => `${k} → ${PLATFORM_META[k].formats.join(' | ')}`).join('; ')} (matching is case-insensitive).`,
+  `assets[] entries: { asset_id, filename, type, reference, provider, role, mimeType, size, duration }. type must be one of: ${ASSET_TYPES.join(', ')}. role is "video" | "thumbnail" | "media" | null. size (bytes) and duration (seconds) are numbers or null; mimeType is a string or null. Assets are references only — never embed media bytes.`,
   `instagram metadata: { caption (string), hashtags (array of strings), location (string or null) }.`,
   `youtube metadata: { title (non-empty string), description (string), tags (array of strings) }.`,
   `linkedin metadata: { post_text (string) }.`,
   `x metadata: { content (string), is_thread (boolean), thread (array of strings or null — required as an array when is_thread is true) }.`,
   `schedule: enabled (boolean), datetime (ISO 8601 or null — required when enabled), timezone (IANA name or null).`,
+  `published_url: a valid http(s) URL string when present, otherwise null.`,
 ].join('\n')
 
 export const MANIFEST_SCHEMA_EXAMPLE = `{
   "schema_version": "${MANIFEST_SCHEMA_VERSION}",
   "manifest_id": "velgic-manifest-<campaign-id>",
   "generated_at": "2026-08-17T09:00:00Z",
-  "timezone": "America/New_York",
+  "timezone": "Asia/Kolkata",
   "brand": { "name": null, "voice": null, "handle": null },
   "campaign": {
-    "id": "camp-01",
-    "name": "Why AI agents get stuck in loops",
-    "description": "One concept, four platforms.",
+    "id": "camp-04",
+    "name": "Top Open Source Alternatives",
+    "description": "One content concept, distributed across four platforms.",
+    "status": "partially_published",
     "content": {
-      "id": "content-01",
-      "title": "Why AI agents get stuck in loops",
-      "concept": "Agents loop because context breaks down, not reasoning.",
-      "origin": "observation",
-      "audience": "AI builders",
+      "id": "content-04",
+      "title": "Top open-source alternatives for content creators",
+      "concept": "Free, open-source replacements for the paid creator stack — each with one honest caveat.",
+      "origin": "research",
+      "audience": "Technical creators",
       "content_type": "short_video",
       "format": "Vertical short-form",
-      "hook": "Your agent is not stuck — its memory is.",
+      "hook": "You do not need to pay for your creator stack. Here are the open-source tools I actually use.",
       "draft": null,
       "notes": null,
-      "status": "ready",
+      "status": "in_production",
       "linked_idea_id": null,
       "linked_experiment_id": null
     }
@@ -680,58 +755,73 @@ export const MANIFEST_SCHEMA_EXAMPLE = `{
   "platforms": [
     {
       "platform": "instagram",
-      "id": "pc-01",
+      "id": "pc-11",
       "format": "Reel",
-      "status": "scheduled",
-      "schedule": { "enabled": true, "datetime": "2026-08-20T09:00:00-04:00", "timezone": "America/New_York" },
-      "published_url": null,
-      "published_at": null,
+      "status": "published",
+      "schedule": { "enabled": false, "datetime": null, "timezone": null },
+      "published_url": "https://www.instagram.com/reel/oss-creators",
+      "published_at": "2026-08-15T10:30:00Z",
       "assets": [
-        { "asset_id": "instagram-reel-01", "filename": "reel.mp4", "type": "video", "reference": "instagram/reel.mp4", "provider": "local", "role": "media" }
+        { "asset_id": "instagram-reel-03", "filename": "oss-reel.mp4", "type": "video", "reference": "instagram/oss-reel.mp4", "provider": "local", "role": "media", "mimeType": "video/mp4", "size": 24800000, "duration": 42 }
       ],
-      "metadata": { "caption": "Your AI agent is not stuck — its memory is.", "hashtags": ["#ai", "#agents", "#buildinpublic"], "location": null }
+      "notes": null,
+      "metadata": {
+        "caption": "You do not need to pay for your creator stack. Here are the open-source tools I actually use.",
+        "hashtags": ["#opensource", "#creators", "#buildinpublic"],
+        "location": null
+      }
     },
     {
       "platform": "youtube",
-      "id": "pc-02",
+      "id": "pc-12",
       "format": "Short",
-      "status": "draft",
-      "schedule": { "enabled": false, "datetime": null, "timezone": null },
+      "status": "scheduled",
+      "schedule": { "enabled": true, "datetime": "2026-08-20T18:00:00+05:30", "timezone": "Asia/Kolkata" },
       "published_url": null,
       "published_at": null,
       "assets": [
-        { "asset_id": "youtube-short-01", "filename": "short.mp4", "type": "video", "reference": "youtube/short.mp4", "provider": "local", "role": "video" },
-        { "asset_id": "youtube-thumb-01", "filename": "thumb.jpg", "type": "image", "reference": "youtube/thumb.jpg", "provider": "local", "role": "thumbnail" }
+        { "asset_id": "youtube-short-03", "filename": "oss-short.mp4", "type": "video", "reference": "youtube/oss-short.mp4", "provider": "local", "role": "video", "mimeType": "video/mp4", "size": null, "duration": 42 },
+        { "asset_id": "youtube-thumb-03", "filename": "oss-thumb.jpg", "type": "image", "reference": "youtube/oss-thumb.jpg", "provider": "local", "role": "thumbnail", "mimeType": "image/jpeg", "size": 320000, "duration": null }
       ],
-      "metadata": { "title": "Why AI agents get stuck in loops", "description": "Context is the bottleneck — and how to fix it.", "tags": ["ai agents", "llm", "automation"] }
+      "notes": null,
+      "metadata": {
+        "title": "Top open-source alternatives for content creators",
+        "description": "The free, open-source replacements for your paid creator stack — with one honest caveat per tool.",
+        "tags": ["open source", "creator tools", "oss"]
+      }
     },
     {
       "platform": "linkedin",
-      "id": "pc-03",
+      "id": "pc-13",
       "format": "Post",
-      "status": "draft",
+      "status": "ready",
       "schedule": { "enabled": false, "datetime": null, "timezone": null },
       "published_url": null,
       "published_at": null,
       "assets": [],
-      "metadata": { "post_text": "Most agent failures are context failures. Here is the anatomy of the loop and three fixes." }
+      "notes": null,
+      "metadata": {
+        "post_text": "You do not need a paid subscription for every part of your creator stack. Here are the open-source tools I actually use — and the one honest caveat for each."
+      }
     },
     {
       "platform": "x",
-      "id": "pc-04",
+      "id": "pc-14",
       "format": "Thread",
       "status": "draft",
       "schedule": { "enabled": false, "datetime": null, "timezone": null },
       "published_url": null,
       "published_at": null,
       "assets": [],
+      "notes": null,
       "metadata": {
-        "content": "Your AI agent is not stuck in a loop — its memory is.",
+        "content": "You do not need to pay for your creator stack.",
         "is_thread": true,
         "thread": [
-          "Your AI agent is not stuck in a loop — its memory is.",
-          "The loop is a symptom: the model lost the context it needs to make progress.",
-          "Three fixes: checkpointing, memory compaction, and explicit exit conditions."
+          "You do not need to pay for your creator stack.",
+          "Every paid tool I replaced with an open-source alternative — and the one caveat that keeps me honest.",
+          "Video editing, design, hosting, analytics: there is an open-source option for each.",
+          "The caveat: free means you trade money for setup time. Bookmark the ones worth that trade."
         ]
       }
     }

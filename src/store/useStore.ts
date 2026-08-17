@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { Item, Experiment, Stage, ContentItem, Campaign, PlatformContent, PlatformKey, ContentTypeKey } from '../types'
 import { seedItems, seedExperiments, seedContents, seedCampaigns, seedPlatformContents } from '../data/seed'
 import { nowIso, uid } from '../lib/utils'
-import { blankPlatformContent } from '../lib/content'
+import { blankPlatformContent, deriveCampaignStatus, normalizeCampaignStatus, normalizeContentStatus } from '../lib/content'
 import { manifestToEntities, validateManifest, type ManifestIssue, type VelgicManifest } from '../lib/manifest'
 
 interface StoreState {
@@ -126,6 +126,8 @@ export const useStore = create<StoreState>()(
           name,
           description,
           contentId,
+          platforms,
+          status: 'draft',
           createdAt: now,
           updatedAt: now,
         }
@@ -140,6 +142,11 @@ export const useStore = create<StoreState>()(
       addPlatformContent: (campaignId, platform, contentType) =>
         set((s) => ({
           platformContents: [...s.platformContents, blankPlatformContent(campaignId, platform, contentType)],
+          campaigns: s.campaigns.map((c) =>
+            c.id === campaignId && !c.platforms.includes(platform)
+              ? { ...c, platforms: [...c.platforms, platform], updatedAt: nowIso() }
+              : c,
+          ),
         })),
 
       updatePlatformContent: (id, patch) =>
@@ -148,7 +155,18 @@ export const useStore = create<StoreState>()(
         })),
 
       deletePlatformContent: (id) =>
-        set((s) => ({ platformContents: s.platformContents.filter((pc) => pc.id !== id) })),
+        set((s) => {
+          const removed = s.platformContents.find((pc) => pc.id === id)
+          const platformContents = s.platformContents.filter((pc) => pc.id !== id)
+          const campaigns = removed
+            ? s.campaigns.map((c) => {
+                if (c.id !== removed.campaignId) return c
+                const platforms = [...new Set(platformContents.filter((pc) => pc.campaignId === c.id).map((pc) => pc.platform))]
+                return { ...c, platforms, updatedAt: nowIso() }
+              })
+            : s.campaigns
+          return { platformContents, campaigns }
+        }),
 
       importCampaign: (manifest) => {
         const issues = validateManifest(manifest)
@@ -185,7 +203,35 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'velgic',
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => {
+        // Handle V1 payloads (ideas/experiments only) and earlier V2 payloads
+        // missing the content model — and patch fields added later, so stored
+        // data survives upgrades without a full reset.
+        const state = (persisted ?? {}) as Partial<StoreState> & Record<string, unknown>
+
+        if (!Array.isArray(state.contents)) state.contents = JSON.parse(JSON.stringify(seedContents))
+        if (!Array.isArray(state.campaigns)) state.campaigns = JSON.parse(JSON.stringify(seedCampaigns))
+        if (!Array.isArray(state.platformContents)) state.platformContents = JSON.parse(JSON.stringify(seedPlatformContents))
+
+        // Normalize content statuses to the current enum (legacy scheduled/failed → aliases).
+        state.contents = (state.contents as ContentItem[]).map((c) => ({ ...c, status: normalizeContentStatus(c.status) }))
+
+        // Backfill campaign status + platforms, and platform-version notes.
+        const pcs = state.platformContents as PlatformContent[]
+        state.campaigns = (state.campaigns as Campaign[]).map((c) => {
+          const campaignPcs = pcs.filter((pc) => pc.campaignId === c.id)
+          const status = normalizeCampaignStatus(c.status, campaignPcs)
+          return {
+            ...c,
+            status,
+            platforms: (c.platforms?.length ? c.platforms : [...new Set(campaignPcs.map((pc) => pc.platform))]) as Campaign['platforms'],
+          }
+        })
+        state.platformContents = pcs.map((pc) => ({ ...pc, notes: pc.notes ?? '' }))
+
+        return state as StoreState
+      },
     },
   ),
 )

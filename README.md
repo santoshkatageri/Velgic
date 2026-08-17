@@ -48,9 +48,11 @@ Content
   concept, origin (idea / experiment / research / observation / opinion / trend /
   personal experience / direct), audience, content type (Reel, Carousel, Short
   video, LinkedIn post, X post, X thread, YouTube Short, YouTube video, Article,
-  Tutorial), format, hook, draft, notes, status, and optional links to an idea or
-  experiment. Content can be created directly from the Content section, from any
-  idea, or from any experiment.
+  Tutorial), format, hook, draft, notes, status
+  (**Draft → In Production → Ready → Published → Archived**, independent of the
+  Pipeline stages), and optional links to an idea or experiment. Content can be
+  created directly from the Content section, from any idea, or from any
+  experiment.
 - **Campaigns** — one content concept becomes a multi-platform campaign:
 
   ```
@@ -61,22 +63,28 @@ Content
   └── X         → Thread  (post/thread content, media)
   ```
 
-  Each platform version is independently editable, with its own schedule
-  (enabled + datetime + IANA timezone), publishing lifecycle
-  (**Draft → Ready → Scheduled → Published → Failed**), and published URL.
-  Actions per platform: Copy content, Copy caption, Export manifest, Open
-  platform, Mark ready / scheduled / published, Add published URL. A publishing
-  readiness checklist is computed per platform.
+  Campaigns have their own status
+  (**Draft → Ready → Partially Published → Published → Archived**, manually set
+  or derived from platform versions). Each platform version is independently
+  editable, with its own status
+  (**Draft → Ready → Scheduled → Published → Failed**), schedule
+  (enabled + ISO 8601 datetime + optional IANA timezone), published URL, notes,
+  and asset references (with optional mimeType / size / duration — media is
+  never embedded). Actions per platform: Copy content, Copy caption, Export
+  manifest, Open platform, Mark ready / scheduled / published, Add published
+  URL. A publishing readiness checklist is computed per platform.
 - **Velgic Publishing Manifest** — the central V2 feature. A canonical JSON
-  package (`"schema_version": "1.0"`) describing the campaign, content,
-  platforms, platform-specific metadata, asset references, captions/text,
-  titles, descriptions, tags/hashtags, location, scheduling, publishing status,
-  and published URLs. **Export** it, **generate an AI prompt** (copy into
+  package (`"schema_version": "1.0"`, versioned for future `1.1`/`2.0`)
+  describing the campaign, content, platforms, platform-specific metadata (never
+  flattened), asset references, captions/text, titles, descriptions,
+  tags/hashtags, location, scheduling, publishing status, and published URLs.
+  **Export** (download or **Copy JSON**), **generate an AI prompt** (copy into
   ChatGPT / Gemini / Claude / Grok — no paid AI API), and **import** pasted or
   uploaded JSON with full validation (invalid JSON, unsupported schema version,
-  missing campaign/platform/metadata, invalid datetime, invalid platform/format,
-  invalid asset reference — nothing is partially imported). Full schema
-  documentation: [`docs/velgic-publishing-manifest.md`](docs/velgic-publishing-manifest.md).
+  missing campaign/platform/metadata, invalid datetime, invalid
+  platform/format — case-insensitive, invalid asset reference, invalid published
+  URL — nothing is partially imported). Full schema documentation:
+  [`docs/velgic-publishing-manifest.md`](docs/velgic-publishing-manifest.md).
 - **Assets** — media is never embedded in JSON. Asset references
   (`asset_id`, `filename`, `type`, `reference`) are resolved behind a
   `StorageProvider` abstraction (local/reference in V2; Google Drive /
@@ -105,4 +113,9 @@ npm run dev      # start the dev server
 npm run build    # type-check + production build
 ```
 
-Data lives in `src/data/seed.ts` (realistic seeded examples: 8 ideas, 5 pipeline items, 5 published records, 4 experiments, 3 content pieces, 3 campaigns, 10 platform versions). Use **Reset demo data** in the sidebar to restore the seed.
+Data lives in `src/data/seed.ts` (realistic seeded examples: 8 ideas, 5 pipeline
+items, 5 published records, 4 experiments, 4 content pieces, 4 campaigns, 14
+platform versions — including the end-to-end test case *Top open-source
+alternatives for content creators* distributed as Instagram Reel, YouTube Short,
+LinkedIn Post, and X Thread with independent statuses). Use **Reset demo data**
+in the sidebar to restore the seed.

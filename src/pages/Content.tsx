@@ -3,16 +3,19 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/uiStore'
 import {
+  CAMPAIGN_STATUSES,
+  CAMPAIGN_STATUS_META,
   CONTENT_ORIGINS,
   CONTENT_ORIGIN_META,
+  CONTENT_STATUSES,
+  CONTENT_STATUS_META,
   CONTENT_TYPE_META,
   PLATFORM_META,
-  PUBLISH_STATUSES,
   PUBLISH_STATUS_META,
 } from '../lib/constants'
 import { campaignReadiness, nextScheduled, publishStatusTone } from '../lib/content'
 import { formatSchedule, timeAgo } from '../lib/utils'
-import { Button, Card, EmptyState, Input, OriginBadge, PublishStatusBadge, Select } from '../components/ui'
+import { Button, CampaignStatusBadge, Card, ContentStatusBadge, EmptyState, Input, OriginBadge, Select } from '../components/ui'
 import { ImportManifestModal } from '../components/ImportManifestModal'
 import {
   IconChevronRight,
@@ -24,7 +27,7 @@ import {
   IconPlus,
   IconSearch,
 } from '../components/icons'
-import type { ContentOrigin, PublishStatus, PlatformKey } from '../types'
+import type { CampaignStatus, ContentOrigin, ContentStatus, PlatformKey, PublishStatus } from '../types'
 
 const ORIGIN_FILTERS: Array<ContentOrigin | 'all'> = ['all', ...CONTENT_ORIGINS]
 
@@ -42,6 +45,28 @@ function PlatformChip({ platform, status, schedule }: { platform: PlatformKey; s
   )
 }
 
+function StatusChips<T extends string>({
+  statuses,
+  value,
+  onChange,
+  label,
+}: {
+  statuses: T[]
+  value: T | 'all'
+  onChange: (v: T | 'all') => void
+  label: (s: T) => string
+}) {
+  return (
+    <div className="chip-row">
+      {(['all', ...statuses] as const).map((s) => (
+        <button key={s} className={value === s ? 'chip chip--active' : 'chip'} onClick={() => onChange(s as T | 'all')}>
+          {s === 'all' ? 'All' : label(s as T)}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function Content() {
   const navigate = useNavigate()
   const contents = useStore((s) => s.contents)
@@ -50,8 +75,9 @@ export function Content() {
   const openContentEditor = useUI((s) => s.openContentEditor)
 
   const [query, setQuery] = useState('')
-  const [status, setStatus] = useState<PublishStatus | 'all'>('all')
   const [origin, setOrigin] = useState<ContentOrigin | 'all'>('all')
+  const [contentStatus, setContentStatus] = useState<ContentStatus | 'all'>('all')
+  const [campaignStatus, setCampaignStatus] = useState<CampaignStatus | 'all'>('all')
   const [importOpen, setImportOpen] = useState(false)
 
   const pcsByCampaign = useMemo(() => {
@@ -62,9 +88,11 @@ export function Content() {
     return map
   }, [platformContents])
 
+  const contentById = useMemo(() => new Map(contents.map((c) => [c.id, c])), [contents])
+
   const filteredContents = useMemo(() => {
     let list = [...contents]
-    if (status !== 'all') list = list.filter((c) => c.status === status)
+    if (contentStatus !== 'all') list = list.filter((c) => c.status === contentStatus)
     if (origin !== 'all') list = list.filter((c) => c.origin === origin)
     if (query.trim()) {
       const q = query.toLowerCase()
@@ -77,29 +105,23 @@ export function Content() {
       )
     }
     return list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-  }, [contents, query, status, origin])
+  }, [contents, query, contentStatus, origin])
 
   const filteredCampaigns = useMemo(() => {
     let list = [...campaigns]
+    if (campaignStatus !== 'all') list = list.filter((c) => c.status === campaignStatus)
+    if (origin !== 'all') list = list.filter((c) => contentById.get(c.contentId)?.origin === origin)
     if (query.trim()) {
       const q = query.toLowerCase()
-      list = list.filter((c) => c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q))
-    }
-    if (origin !== 'all' || status !== 'all') {
-      const contentById = new Map(contents.map((c) => [c.id, c]))
-      list = list.filter((c) => {
-        const content = contentById.get(c.contentId)
-        if (!content) return false
-        if (origin !== 'all' && content.origin !== origin) return false
-        if (status !== 'all') {
-          const pcs = pcsByCampaign[c.id] ?? []
-          if (!pcs.some((pc) => pc.status === status)) return false
-        }
-        return true
-      })
+      list = list.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          c.description.toLowerCase().includes(q) ||
+          (contentById.get(c.contentId)?.title.toLowerCase().includes(q) ?? false),
+      )
     }
     return list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-  }, [campaigns, contents, platformContents, pcsByCampaign, query, status, origin])
+  }, [campaigns, contentById, query, campaignStatus, origin])
 
   return (
     <div className="stack">
@@ -107,13 +129,6 @@ export function Content() {
         <div className="filter-bar__search">
           <IconSearch size={15} />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search content & campaigns…" />
-        </div>
-        <div className="chip-row">
-          {(['all', ...PUBLISH_STATUSES] as const).map((s) => (
-            <button key={s} className={status === s ? 'chip chip--active' : 'chip'} onClick={() => setStatus(s)}>
-              {s === 'all' ? 'All' : PUBLISH_STATUS_META[s].label}
-            </button>
-          ))}
         </div>
         <Select value={origin} onChange={(e) => setOrigin(e.target.value as ContentOrigin | 'all')} width={180}>
           <option value="all">All origins</option>
@@ -144,6 +159,13 @@ export function Content() {
           <span className="mono-dim">{filteredContents.length}</span>
         </div>
 
+        <StatusChips
+          statuses={CONTENT_STATUSES}
+          value={contentStatus}
+          onChange={setContentStatus}
+          label={(s) => CONTENT_STATUS_META[s].label}
+        />
+
         {filteredContents.length === 0 ? (
           <Card>
             <EmptyState
@@ -167,7 +189,7 @@ export function Content() {
                 <Card key={c.id} className="idea-card content-card" onClick={() => navigate(`/content/${c.id}`)}>
                   <div className="idea-card__top">
                     <h3 className="idea-card__title">{c.title}</h3>
-                    <PublishStatusBadge status={c.status} />
+                    <ContentStatusBadge status={c.status} />
                   </div>
                   {c.concept && <p className="idea-card__problem">{c.concept}</p>}
                   <div className="idea-card__badges">
@@ -210,6 +232,13 @@ export function Content() {
           <span className="mono-dim">{filteredCampaigns.length}</span>
         </div>
 
+        <StatusChips
+          statuses={CAMPAIGN_STATUSES}
+          value={campaignStatus}
+          onChange={setCampaignStatus}
+          label={(s) => CAMPAIGN_STATUS_META[s].label}
+        />
+
         {filteredCampaigns.length === 0 ? (
           <Card>
             <EmptyState
@@ -221,7 +250,7 @@ export function Content() {
         ) : (
           <div className="campaign-grid">
             {filteredCampaigns.map((campaign) => {
-              const content = contents.find((c) => c.id === campaign.contentId) ?? null
+              const content = contentById.get(campaign.contentId) ?? null
               const pcs = (pcsByCampaign[campaign.id] ?? []).slice().sort((a, b) => a.platform.localeCompare(b.platform))
               const readiness = campaignReadiness(pcs)
               const next = nextScheduled(pcs)
@@ -240,11 +269,14 @@ export function Content() {
                         </Link>
                       )}
                     </div>
-                    {readiness !== null && (
-                      <span className="campaign-card__readiness" title="Publishing readiness">
-                        {readiness}%
-                      </span>
-                    )}
+                    <div className="campaign-card__top-right">
+                      <CampaignStatusBadge status={campaign.status} />
+                      {readiness !== null && (
+                        <span className="campaign-card__readiness" title="Publishing readiness">
+                          {readiness}%
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="campaign-card__platforms">
                     {pcs.length === 0 ? (
