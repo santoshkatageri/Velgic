@@ -5,3 +5,6 @@ dist-ssr
 .DS_Store
 *.log
 .vite
+
+# Generated acceptance-test bundles (esbuild)
+scripts/*.cjs

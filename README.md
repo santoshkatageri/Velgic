@@ -220,6 +220,18 @@ npm run build    # type-check + production build
 
 ## Acceptance tests
 
+Run everything with one command (requires the test-only `jsdom` harness):
+
+```bash
+npm install --no-save --no-package-lock jsdom
+npm test
+```
+
+`npm test` runs every authoritative acceptance suite via
+`scripts/run-acceptance.mjs`, preserving each suite's documented esbuild
+bundling procedure, cleaning up generated bundles, and leaving the working tree
+unchanged.
+
 Repeatable headless acceptance suites live in `scripts/` (run instructions in
 each file header):
 
@@ -240,6 +252,18 @@ platform versions, and the asset library — including the end-to-end test case
 *Top open-source alternatives for content creators* distributed as Instagram
 Reel, YouTube Short, LinkedIn Post, and X Thread with independent statuses).
 Use **Reset demo data** in the sidebar to restore the seed.
+
+## Continuous integration
+
+A GitHub Actions **quality gate** (`.github/workflows/ci.yml`) runs on pull
+requests targeting `main` and pushes to `main`:
+
+```text
+npm ci → install jsdom harness → npx tsc → npm test → npm run build
+```
+
+CI only verifies; it does not deploy. Cloudflare Pages remains responsible for
+deployment.
 
 ## Intentionally deferred to V3 (not implemented)
 
