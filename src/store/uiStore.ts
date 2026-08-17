@@ -1,5 +1,17 @@
 import { create } from 'zustand'
-import type { Item, Experiment } from '../types'
+import type { Item, Experiment, ContentItem, ContentOrigin, ContentTypeKey } from '../types'
+
+export interface ContentPrefill {
+  origin: ContentOrigin
+  ideaId?: string
+  experimentId?: string
+  title?: string
+  concept?: string
+  audience?: string
+  notes?: string
+  contentType?: ContentTypeKey
+  format?: string
+}
 
 interface UIState {
   // Idea editor drawer
@@ -14,6 +26,13 @@ interface UIState {
   experimentPrefill: string
   openExperimentEditor: (experiment?: Experiment | null, prefillName?: string) => void
   closeExperimentEditor: () => void
+
+  // Content editor drawer (V2)
+  contentEditorOpen: boolean
+  contentEditorItem: ContentItem | null
+  contentPrefill: ContentPrefill | null
+  openContentEditor: (opts?: { content?: ContentItem | null; prefill?: ContentPrefill | null }) => void
+  closeContentEditor: () => void
 
   // Confirm dialog
   confirmMessage: string | null
@@ -34,6 +53,17 @@ export const useUI = create<UIState>((set, get) => ({
   openExperimentEditor: (experiment = null, prefillName = '') =>
     set({ experimentOpen: true, experimentItem: experiment, experimentPrefill: prefillName }),
   closeExperimentEditor: () => set({ experimentOpen: false, experimentItem: null, experimentPrefill: '' }),
+
+  contentEditorOpen: false,
+  contentEditorItem: null,
+  contentPrefill: null,
+  openContentEditor: (opts = {}) =>
+    set({
+      contentEditorOpen: true,
+      contentEditorItem: opts.content ?? null,
+      contentPrefill: opts.prefill ?? null,
+    }),
+  closeContentEditor: () => set({ contentEditorOpen: false, contentEditorItem: null, contentPrefill: null }),
 
   confirmMessage: null,
   confirmResolve: null,

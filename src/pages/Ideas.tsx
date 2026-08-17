@@ -4,9 +4,10 @@ import { useStore } from '../store/useStore'
 import { useUI } from '../store/uiStore'
 import { opportunityScore } from '../lib/scoring'
 import { CATEGORIES, STAGES, STAGE_META } from '../lib/constants'
+import { ideaFormatToContentType } from '../lib/content'
 import { formatDate } from '../lib/utils'
 import { Button, Card, ScoreRing, CategoryBadge, PriorityBadge, EmptyState, Select, Input, useConfirm } from '../components/ui'
-import { IconPlus, IconEdit, IconTrash, IconSearch, IconInbox } from '../components/icons'
+import { IconPlus, IconEdit, IconTrash, IconSearch, IconInbox, IconBolt } from '../components/icons'
 import type { Item, Stage } from '../types'
 
 type SortKey = 'score' | 'newest' | 'effort'
@@ -15,8 +16,23 @@ export function Ideas() {
   const items = useStore((s) => s.items)
   const deleteItem = useStore((s) => s.deleteItem)
   const openEditor = useUI((s) => s.openEditor)
+  const openContentEditor = useUI((s) => s.openContentEditor)
   const confirm = useConfirm()
   const navigate = useNavigate()
+
+  const createContentFromIdea = (item: Item) =>
+    openContentEditor({
+      prefill: {
+        origin: 'idea',
+        ideaId: item.id,
+        title: item.title,
+        concept: item.coreIdea || item.problem || '',
+        audience: item.audience,
+        notes: item.notes,
+        contentType: ideaFormatToContentType(item.format),
+        format: item.format,
+      },
+    })
 
   const [query, setQuery] = useState('')
   const [stage, setStage] = useState<Stage | 'all'>('all')
@@ -114,6 +130,9 @@ export function Ideas() {
                     <span className="idea-card__date">{formatDate(item.createdAt)}</span>
                   </div>
                   <div className="card-actions" onClick={(e) => e.stopPropagation()}>
+                    <button className="icon-btn" onClick={() => createContentFromIdea(item)} aria-label="Create content" title="Create content — no experiment needed">
+                      <IconBolt size={14} />
+                    </button>
                     <button className="icon-btn" onClick={() => openEditor(item)} aria-label="Edit idea" title="Edit">
                       <IconEdit size={14} />
                     </button>

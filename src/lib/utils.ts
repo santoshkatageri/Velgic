@@ -40,3 +40,69 @@ export function formatNumber(n: number): string {
 export function nowIso(): string {
   return new Date().toISOString()
 }
+
+/** Copy text to the clipboard with a fallback for older browsers. */
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    // fall through to legacy path
+  }
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.focus()
+    ta.select()
+    const ok = document.execCommand('copy')
+    ta.remove()
+    return ok
+  } catch {
+    return false
+  }
+}
+
+/** ISO 8601 → value usable by <input type="datetime-local"> (local time). */
+export function isoToLocalInput(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** <input type="datetime-local"> value → ISO 8601 (or null). */
+export function localInputToIso(value: string): string | null {
+  if (!value) return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+}
+
+/** Tomorrow at 9:00 AM local time — a sensible default schedule slot. */
+export function tomorrowNineIso(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  d.setHours(9, 0, 0, 0)
+  return d.toISOString()
+}
+
+/** Human-readable scheduled datetime, honoring the platform timezone when valid. */
+export function formatSchedule(iso: string | null, timezone?: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
+  let rendered: string
+  try {
+    if (timezone) opts.timeZone = timezone
+    rendered = d.toLocaleString('en-US', opts)
+  } catch {
+    rendered = d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  }
+  return timezone ? `${rendered} · ${timezone}` : rendered
+}

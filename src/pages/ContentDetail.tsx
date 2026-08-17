@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { useUI } from '../store/uiStore'
 import { ai } from '../lib/ai'
 import { opportunityScore, SCORE_DIMENSIONS, REUSABLE_BONUS } from '../lib/scoring'
 import { CATEGORIES, FORMATS, AUDIENCES, PRIORITIES, STAGES, STAGE_META, EFFORT_LABELS } from '../lib/constants'
+import { ideaFormatToContentType } from '../lib/content'
 import { formatDate, uid } from '../lib/utils'
 import { Button, Card, ScoreRing, DimensionBars, CategoryBadge, StageBadge, PriorityBadge, Badge, Field, Input, Select, EmptyState, useConfirm } from '../components/ui'
-import { IconArrowLeft, IconEdit, IconTrash, IconSparkle, IconPlus, IconClose, IconChart, IconInbox } from '../components/icons'
+import { EditableSection } from '../components/EditableSection'
+import { IconArrowLeft, IconEdit, IconTrash, IconSparkle, IconPlus, IconClose, IconChart, IconInbox, IconBolt } from '../components/icons'
 import type { Item, PerformanceRecord } from '../types'
 
 function GenerateButton({ label, busy, onClick }: { label: string; busy: boolean; onClick: () => void }) {
@@ -16,64 +17,6 @@ function GenerateButton({ label, busy, onClick }: { label: string; busy: boolean
     <Button variant="subtle" size="sm" icon={<IconSparkle size={13} />} onClick={onClick} disabled={busy}>
       {busy ? 'Generating…' : label}
     </Button>
-  )
-}
-
-function EditableSection({
-  title,
-  value,
-  placeholder,
-  onSave,
-  actions,
-}: {
-  title: string
-  value: string
-  placeholder: string
-  onSave: (text: string) => void
-  actions?: ReactNode
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
-
-  const startEdit = () => {
-    setDraft(value)
-    setEditing(true)
-  }
-  const save = () => {
-    onSave(draft)
-    setEditing(false)
-  }
-
-  return (
-    <Card className="section-card">
-      <div className="section-card__head">
-        <span className="section-card__title">{title}</span>
-        <div className="section-card__tools">
-          {!editing && actions}
-          {!editing ? (
-            <button className="text-btn" onClick={startEdit}>
-              Edit
-            </button>
-          ) : (
-            <>
-              <button className="text-btn" onClick={() => setEditing(false)}>
-                Cancel
-              </button>
-              <button className="text-btn text-btn--primary" onClick={save}>
-                Save
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      {editing ? (
-        <textarea className="input input--area section-card__textarea" value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus />
-      ) : value.trim() ? (
-        <div className="section-card__body">{value}</div>
-      ) : (
-        <div className="section-card__body section-card__body--empty">{placeholder}</div>
-      )}
-    </Card>
   )
 }
 
@@ -85,6 +28,7 @@ export function ContentDetail() {
   const deleteItem = useStore((s) => s.deleteItem)
   const moveItem = useStore((s) => s.moveItem)
   const openEditor = useUI((s) => s.openEditor)
+  const openContentEditor = useUI((s) => s.openContentEditor)
   const confirm = useConfirm()
 
   const item = items.find((i) => i.id === id)
@@ -173,6 +117,28 @@ export function ContentDetail() {
             </div>
           </div>
           <div className="detail-head__actions">
+            <Button
+              variant="subtle"
+              size="sm"
+              icon={<IconBolt size={13} />}
+              title="Turn this idea into a first-class Content piece (no experiment needed)"
+              onClick={() =>
+                openContentEditor({
+                  prefill: {
+                    origin: 'idea',
+                    ideaId: item.id,
+                    title: item.title,
+                    concept: item.coreIdea || item.problem || '',
+                    audience: item.audience,
+                    notes: item.notes,
+                    contentType: ideaFormatToContentType(item.format),
+                    format: item.format,
+                  },
+                })
+              }
+            >
+              Create content
+            </Button>
             <Button variant="subtle" size="sm" icon={<IconEdit size={13} />} onClick={() => openEditor(item)}>
               Edit
             </Button>
