@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store/useStore'
 import { CAMPAIGN_STATUSES, CAMPAIGN_STATUS_META, PLATFORM_KEYS, PLATFORM_META } from '../lib/constants'
-import { campaignReadiness, deriveCampaignStatus, nextScheduled } from '../lib/content'
+import { campaignReadiness, deriveCampaignStatus, nextScheduled, statusGlyph } from '../lib/content'
 import { copyCampaignManifest, exportCampaignManifest } from '../lib/manifest'
 import { formatDate, formatSchedule } from '../lib/utils'
-import { Badge, Button, CampaignStatusBadge, Card, EmptyState, Field, Input, Select, useConfirm } from '../components/ui'
+import { Badge, Button, CampaignStatusBadge, Card, EmptyState, Field, Input, PublishStatusBadge, Select, useConfirm } from '../components/ui'
 import { PlatformSection } from '../components/PlatformSection'
 import { PublishPromptModal } from '../components/PublishPromptModal'
 import { ImportManifestModal } from '../components/ImportManifestModal'
@@ -218,6 +218,38 @@ export function CampaignDetail() {
           The Velgic Publishing Manifest packages this campaign as validated JSON — caption, assets, schedule, status and published URLs per
           platform. Export it, or generate an AI prompt and import the result.
         </p>
+        {pcs.length > 0 && (
+          <div className="campaign-status-summary">
+            <div className="campaign-status-summary__head">
+              <span className="section-label">Distribution status</span>
+              {readiness !== null && <span className="mono-dim">{readiness}% ready (secondary)</span>}
+            </div>
+            <div className="campaign-status-summary__rows">
+              {pcs.map((pc) => {
+                const Icon = IconPlatform[pc.platform]
+                return (
+                  <div key={pc.id} className={`campaign-status-row campaign-status-row--${pc.status}`}>
+                    <span className={`platform-icon platform-icon--${pc.platform}`}>
+                      <Icon size={13} />
+                    </span>
+                    <span className="campaign-status-row__name">
+                      {PLATFORM_META[pc.platform].label} · {pc.format}
+                    </span>
+                    <span className="campaign-status-row__glyph" title={pc.status}>
+                      {statusGlyph(pc.status)}
+                    </span>
+                    <PublishStatusBadge status={pc.status} />
+                    {pc.schedule.enabled && pc.schedule.datetime && (
+                      <span className="campaign-status-row__meta">
+                        <IconClock size={11} /> {formatSchedule(pc.schedule.datetime, pc.schedule.timezone)}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </Card>
 
       {pcs.length === 0 ? (

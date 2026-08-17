@@ -229,3 +229,6 @@ export const ASSET_TYPE_META: Record<AssetType, { label: string }> = {
   document: { label: 'Document' },
   link: { label: 'Link' },
 }
+
+/** Canonical asset roles (manifest/validation). `null` = no specific role. */
+export const ASSET_ROLES: string[] = ['video', 'thumbnail', 'media']

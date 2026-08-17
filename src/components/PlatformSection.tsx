@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import type { AssetRef, AssetType, PlatformContent, PlatformKey, PublishStatus, ScheduleInfo } from '../types'
+import { useMemo, useState } from 'react'
+import type { AssetRef, AssetType, PlatformContent, PlatformKey, PlatformMetrics, PublishStatus, ScheduleInfo } from '../types'
 import { ASSET_TYPES, ASSET_TYPE_META, PLATFORM_META, PUBLISH_STATUSES, PUBLISH_STATUS_META } from '../lib/constants'
 import { blankAssetRef, platformCaptionText, platformPrimaryText, platformReadiness } from '../lib/content'
-import { copyText, formatDate, formatSchedule, isoToLocalInput, localInputToIso, nowIso, tomorrowNineIso } from '../lib/utils'
+import { copyText, formatSchedule, isoToLocalInput, localInputToIso, nowIso, tomorrowNineIso } from '../lib/utils'
+import { useStore } from '../store/useStore'
 import { Badge, Button, Field, Input, PublishStatusBadge, Select, Textarea, useConfirm } from './ui'
 import {
   IconCheckCircle,
@@ -42,6 +43,59 @@ function AssetTypeIcon({ type, size = 14 }: { type: AssetType; size?: number }) 
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Add-asset row: new reference OR reuse from the asset library               */
+/* -------------------------------------------------------------------------- */
+
+function AssetAddRow({
+  label,
+  hint,
+  attachedIds,
+  onNew,
+  onUseExisting,
+}: {
+  label: string
+  hint?: string
+  attachedIds: string[]
+  onNew: () => void
+  onUseExisting: (assetId: string) => void
+}) {
+  const library = useStore((s) => s.assets)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const available = library.filter((a) => !attachedIds.includes(a.asset_id))
+
+  return (
+    <div className="asset-empty">
+      <div className="asset-empty__actions">
+        <button type="button" className="text-btn" onClick={onNew}>
+          <IconPlus size={13} /> Add {label.toLowerCase()} reference
+        </button>
+        <button type="button" className="text-btn" onClick={() => setPickerOpen((v) => !v)} title="Reuse an asset from the library">
+          <IconPlus size={13} /> Use existing asset
+        </button>
+      </div>
+      {pickerOpen && (
+        <select
+          className="asset-picker"
+          value=""
+          onChange={(e) => {
+            if (e.target.value) onUseExisting(e.target.value)
+            setPickerOpen(false)
+          }}
+        >
+          <option value="">Choose from the asset library…</option>
+          {available.map((a) => (
+            <option key={a.asset_id} value={a.asset_id}>
+              {a.filename || a.asset_id} ({a.type})
+            </option>
+          ))}
+        </select>
+      )}
+      {hint && <span className="asset-empty__hint">{hint}</span>}
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Asset reference editor                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -54,6 +108,8 @@ function AssetEditor({
   onSave,
   onClear,
   existing,
+  onUseExisting,
+  sharedCount,
 }: {
   platform: PlatformKey
   role: string
@@ -63,15 +119,18 @@ function AssetEditor({
   onSave: (a: AssetRef) => void
   onClear: () => void
   existing: AssetRef[]
+  onUseExisting: (assetId: string) => void
+  sharedCount: number
 }) {
   if (!asset) {
     return (
-      <div className="asset-empty">
-        <button type="button" className="text-btn" onClick={() => onSave(blankAssetRef(platform, role, existing))}>
-          <IconPlus size={13} /> Add {label.toLowerCase()} reference
-        </button>
-        {hint && <span className="asset-empty__hint">{hint}</span>}
-      </div>
+      <AssetAddRow
+        label={label}
+        hint={hint}
+        attachedIds={existing.map((a) => a.asset_id)}
+        onNew={() => onSave(blankAssetRef(platform, role, existing))}
+        onUseExisting={onUseExisting}
+      />
     )
   }
   return (
@@ -87,6 +146,11 @@ function AssetEditor({
           <IconTrash size={14} />
         </button>
       </div>
+      {sharedCount > 1 && (
+        <div className="asset-box__shared">
+          Shared asset — referenced by {sharedCount} platform versions. Edits apply everywhere it is used.
+        </div>
+      )}
       <div className="asset-box__grid">
         <Field label="Filename">
           <Input value={asset.filename} onChange={(e) => onSave({ ...asset, filename: e.target.value })} placeholder="reel.mp4" />
@@ -203,6 +267,8 @@ function ScheduleEditor({
 /*  Status + lifecycle actions                                                 */
 /* -------------------------------------------------------------------------- */
 
+const METRIC_KEYS: Array<keyof PlatformMetrics> = ['views', 'likes', 'comments', 'shares', 'saves']
+
 function StatusControls({ pc, onUpdate }: { pc: PlatformContent; onUpdate: (patch: Partial<PlatformContent>) => void }) {
   const mark = (status: PublishStatus) => {
     const patch: Partial<PlatformContent> = { status }
@@ -211,6 +277,11 @@ function StatusControls({ pc, onUpdate }: { pc: PlatformContent; onUpdate: (patc
       patch.schedule = { ...pc.schedule, enabled: true, datetime: pc.schedule.datetime ?? tomorrowNineIso() }
     }
     onUpdate(patch)
+  }
+
+  const setMetric = (key: keyof PlatformMetrics, value: string) => {
+    const current: PlatformMetrics = { views: null, likes: null, comments: null, shares: null, saves: null, ...(pc.metrics ?? {}) }
+    onUpdate({ metrics: { ...current, [key]: value === '' ? null : Number(value) } })
   }
 
   return (
@@ -249,8 +320,35 @@ function StatusControls({ pc, onUpdate }: { pc: PlatformContent; onUpdate: (patc
             placeholder="https://…"
           />
         </Field>
-        {pc.publishedAt && <span className="mono-dim">Published {formatDate(pc.publishedAt)}</span>}
       </div>
+      <div className="status-controls__row">
+        <Field label="Published timestamp" hint="Set automatically when you mark Published — edit to correct.">
+          <div className="status-controls__ts">
+            <Input
+              type="datetime-local"
+              value={isoToLocalInput(pc.publishedAt)}
+              onChange={(e) => onUpdate({ publishedAt: localInputToIso(e.target.value) })}
+            />
+            <button type="button" className="text-btn" onClick={() => onUpdate({ publishedAt: nowIso() })}>
+              Set now
+            </button>
+          </div>
+        </Field>
+      </div>
+      <Field label="Metrics (optional)" hint="Manual numbers, retained per platform for future Insights — nothing is ingested automatically.">
+        <div className="metrics-row">
+          {METRIC_KEYS.map((k) => (
+            <Input
+              key={k}
+              type="number"
+              min={0}
+              placeholder={k}
+              value={(pc.metrics?.[k] ?? '') as number | ''}
+              onChange={(e) => setMetric(k, e.target.value)}
+            />
+          ))}
+        </div>
+      </Field>
     </div>
   )
 }
@@ -258,6 +356,8 @@ function StatusControls({ pc, onUpdate }: { pc: PlatformContent; onUpdate: (patc
 /* -------------------------------------------------------------------------- */
 /*  Platform section                                                           */
 /* -------------------------------------------------------------------------- */
+
+type CopyKind = 'content' | 'caption' | 'title' | 'description'
 
 export function PlatformSection({
   pc,
@@ -274,7 +374,23 @@ export function PlatformSection({
   const PlatformIcon = PLATFORM_ICONS[pc.platform]
   const confirm = useConfirm()
   const readiness = platformReadiness(pc)
-  const [copied, setCopied] = useState<'content' | 'caption' | null>(null)
+
+  // Asset library (reusable, reference-only).
+  const library = useStore((s) => s.assets)
+  const allPlatformContents = useStore((s) => s.platformContents)
+  const addAsset = useStore((s) => s.addAsset)
+  const updateAsset = useStore((s) => s.updateAsset)
+  const attachAssetToPlatform = useStore((s) => s.attachAssetToPlatform)
+
+  const usageCounts = useMemo(() => {
+    const m: Record<string, number> = {}
+    for (const p of allPlatformContents) {
+      for (const a of p.assets) m[a.asset_id] = (m[a.asset_id] ?? 0) + 1
+    }
+    return m
+  }, [allPlatformContents])
+
+  const [copied, setCopied] = useState<CopyKind | null>(null)
 
   const currentMeta = (): Record<string, unknown> => {
     switch (pc.platform) {
@@ -291,8 +407,33 @@ export function PlatformSection({
   const setMeta = (patch: Record<string, unknown>) =>
     onUpdate({ [pc.platform]: { ...currentMeta(), ...patch } } as Partial<PlatformContent>)
 
-  const doCopy = async (kind: 'content' | 'caption') => {
-    const text = kind === 'content' ? platformPrimaryText(pc) : platformCaptionText(pc)
+  const copyTargets: Array<[CopyKind, string]> =
+    pc.platform === 'youtube'
+      ? [
+          ['title', 'Copy title'],
+          ['description', 'Copy description'],
+          ['content', 'Copy content'],
+        ]
+      : [
+          ['caption', 'Copy caption'],
+          ['content', 'Copy content'],
+        ]
+
+  const textFor = (kind: CopyKind): string => {
+    switch (kind) {
+      case 'content':
+        return platformPrimaryText(pc)
+      case 'caption':
+        return platformCaptionText(pc)
+      case 'title':
+        return pc.youtube?.title ?? ''
+      case 'description':
+        return pc.youtube?.description ?? ''
+    }
+  }
+
+  const doCopy = async (kind: CopyKind) => {
+    const text = textFor(kind)
     if (!text.trim()) return
     const ok = await copyText(text)
     if (ok) {
@@ -306,23 +447,45 @@ export function PlatformSection({
     if (ok) onDelete()
   }
 
+  /* ---- asset library plumbing ---- */
+  const allExisting = [...pc.assets, ...library]
+
+  /** Ensure the asset exists in the library (create or update) — platform copies are synced by the store. */
+  const syncLibrary = (asset: AssetRef) => {
+    const lib = library.find((a) => a.asset_id === asset.asset_id)
+    if (lib) {
+      updateAsset(asset.asset_id, { ...asset, role: lib.role })
+    } else {
+      addAsset({ ...asset, createdAt: asset.createdAt ?? nowIso(), notes: asset.notes ?? '' })
+    }
+  }
+
   const assetByRole = (role: string): AssetRef | null => pc.assets.find((a) => (a.role ?? 'media') === role) ?? null
-  const setAsset = (role: string, asset: AssetRef | null) => {
+
+  const setRoleAsset = (role: string, asset: AssetRef | null) => {
+    if (!asset) {
+      const cur = assetByRole(role)
+      if (cur) onUpdate({ assets: pc.assets.filter((a) => (a.role ?? 'media') !== role) })
+      return
+    }
+    syncLibrary(asset)
     const assets = [...pc.assets]
     const idx = assets.findIndex((a) => (a.role ?? 'media') === role)
-    if (asset) {
-      if (idx >= 0) assets[idx] = asset
-      else assets.push(asset)
-    } else if (idx >= 0) {
-      assets.splice(idx, 1)
-    }
+    if (idx >= 0) assets[idx] = asset
+    else assets.push(asset)
     onUpdate({ assets })
   }
+
+  const setAssetById = (asset: AssetRef) => {
+    syncLibrary(asset)
+    onUpdate({ assets: pc.assets.map((a) => (a.asset_id === asset.asset_id ? asset : a)) })
+  }
+
+  const useExisting = (role: string, assetId: string) => attachAssetToPlatform(pc.id, assetId, role)
+
   const mediaAssets = pc.assets.filter((a) => (a.role ?? 'media') === 'media')
 
   const openPlatform = () => window.open(pc.publishedUrl || meta.composerUrl, '_blank', 'noopener')
-
-  const captionLabel = pc.platform === 'youtube' ? 'Copy title' : 'Copy caption'
 
   return (
     <section className="platform-card">
@@ -337,6 +500,7 @@ export function PlatformSection({
           </div>
         </div>
         <div className="platform-card__head-right">
+          <PublishStatusBadge status={pc.status} />
           {readiness.ready ? (
             <Badge tone="green" title="Ready to publish">
               <IconCheckCircle size={11} /> Ready
@@ -346,7 +510,6 @@ export function PlatformSection({
               {readiness.pct}% ready
             </Badge>
           )}
-          <PublishStatusBadge status={pc.status} />
           <button className="icon-btn icon-btn--danger" onClick={handleDelete} aria-label={`Remove ${meta.label} version`} title="Remove platform">
             <IconTrash size={14} />
           </button>
@@ -354,12 +517,11 @@ export function PlatformSection({
       </div>
 
       <div className="platform-card__actions">
-        <Button variant="subtle" size="sm" icon={<IconCopy size={13} />} onClick={() => doCopy('content')} disabled={!platformPrimaryText(pc).trim()}>
-          {copied === 'content' ? 'Copied' : 'Copy content'}
-        </Button>
-        <Button variant="subtle" size="sm" icon={<IconCopy size={13} />} onClick={() => doCopy('caption')} disabled={!platformCaptionText(pc).trim()}>
-          {copied === 'caption' ? 'Copied' : captionLabel}
-        </Button>
+        {copyTargets.map(([kind, label]) => (
+          <Button key={kind} variant="subtle" size="sm" icon={<IconCopy size={13} />} onClick={() => doCopy(kind)} disabled={!textFor(kind).trim()}>
+            {copied === kind ? 'Copied' : label}
+          </Button>
+        ))}
         <Button variant="subtle" size="sm" icon={<IconExternal size={13} />} onClick={openPlatform}>
           Open platform
         </Button>
@@ -387,9 +549,11 @@ export function PlatformSection({
               label="Asset"
               hint="e.g. instagram/reel.mp4"
               asset={assetByRole('media')}
-              onSave={(a) => setAsset('media', a)}
-              onClear={() => setAsset('media', null)}
-              existing={pc.assets}
+              onSave={(a) => setRoleAsset('media', a)}
+              onClear={() => setRoleAsset('media', null)}
+              existing={allExisting}
+              onUseExisting={(id) => useExisting('media', id)}
+              sharedCount={usageCounts[assetByRole('media')?.asset_id ?? ''] ?? 0}
             />
             <Field label="Caption">
               <Textarea rows={6} value={pc.instagram.caption} onChange={(e) => setMeta({ caption: e.target.value })} placeholder="POV: your AI agent is not stuck — its memory is 🤖" />
@@ -422,9 +586,11 @@ export function PlatformSection({
               label="Video asset"
               hint="e.g. youtube/short.mp4"
               asset={assetByRole('video')}
-              onSave={(a) => setAsset('video', a)}
-              onClear={() => setAsset('video', null)}
-              existing={pc.assets}
+              onSave={(a) => setRoleAsset('video', a)}
+              onClear={() => setRoleAsset('video', null)}
+              existing={allExisting}
+              onUseExisting={(id) => useExisting('video', id)}
+              sharedCount={usageCounts[assetByRole('video')?.asset_id ?? ''] ?? 0}
             />
             <AssetEditor
               platform={pc.platform}
@@ -432,9 +598,11 @@ export function PlatformSection({
               label="Thumbnail asset"
               hint="e.g. youtube/thumb.jpg"
               asset={assetByRole('thumbnail')}
-              onSave={(a) => setAsset('thumbnail', a)}
-              onClear={() => setAsset('thumbnail', null)}
-              existing={pc.assets}
+              onSave={(a) => setRoleAsset('thumbnail', a)}
+              onClear={() => setRoleAsset('thumbnail', null)}
+              existing={allExisting}
+              onUseExisting={(id) => useExisting('thumbnail', id)}
+              sharedCount={usageCounts[assetByRole('thumbnail')?.asset_id ?? ''] ?? 0}
             />
             <Field label="Title">
               <Input value={pc.youtube.title} onChange={(e) => setMeta({ title: e.target.value })} placeholder="Why AI agents get stuck in loops" />
@@ -472,20 +640,19 @@ export function PlatformSection({
                   role="media"
                   label="Media"
                   asset={a}
-                  onSave={(updated) => onUpdate({ assets: pc.assets.map((x) => (x.asset_id === a.asset_id ? updated : x)) })}
+                  onSave={(updated) => setAssetById(updated)}
                   onClear={() => onUpdate({ assets: pc.assets.filter((x) => x.asset_id !== a.asset_id) })}
-                  existing={pc.assets}
+                  existing={allExisting}
+                  onUseExisting={(id) => useExisting('media', id)}
+                  sharedCount={usageCounts[a.asset_id] ?? 0}
                 />
               ))}
-              <div className="asset-empty">
-                <button
-                  type="button"
-                  className="text-btn"
-                  onClick={() => onUpdate({ assets: [...pc.assets, blankAssetRef(pc.platform, 'media', pc.assets)] })}
-                >
-                  <IconPlus size={13} /> Add media reference
-                </button>
-              </div>
+              <AssetAddRow
+                label="Media"
+                attachedIds={pc.assets.map((a) => a.asset_id)}
+                onNew={() => setAssetById(blankAssetRef(pc.platform, 'media', allExisting))}
+                onUseExisting={(id) => useExisting('media', id)}
+              />
             </div>
           </>
         )}
@@ -512,20 +679,19 @@ export function PlatformSection({
                   role="media"
                   label="Media"
                   asset={a}
-                  onSave={(updated) => onUpdate({ assets: pc.assets.map((x) => (x.asset_id === a.asset_id ? updated : x)) })}
+                  onSave={(updated) => setAssetById(updated)}
                   onClear={() => onUpdate({ assets: pc.assets.filter((x) => x.asset_id !== a.asset_id) })}
-                  existing={pc.assets}
+                  existing={allExisting}
+                  onUseExisting={(id) => useExisting('media', id)}
+                  sharedCount={usageCounts[a.asset_id] ?? 0}
                 />
               ))}
-              <div className="asset-empty">
-                <button
-                  type="button"
-                  className="text-btn"
-                  onClick={() => onUpdate({ assets: [...pc.assets, blankAssetRef(pc.platform, 'media', pc.assets)] })}
-                >
-                  <IconPlus size={13} /> Add media reference
-                </button>
-              </div>
+              <AssetAddRow
+                label="Media"
+                attachedIds={pc.assets.map((a) => a.asset_id)}
+                onNew={() => setAssetById(blankAssetRef(pc.platform, 'media', allExisting))}
+                onUseExisting={(id) => useExisting('media', id)}
+              />
             </div>
           </>
         )}

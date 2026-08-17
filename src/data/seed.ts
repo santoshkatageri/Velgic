@@ -1,4 +1,4 @@
-import type { Item, Experiment, ChecklistItem, ScoreSet, ContentItem, Campaign, PlatformContent } from '../types'
+import type { Item, Experiment, ChecklistItem, ScoreSet, ContentItem, Campaign, PlatformContent, AssetRef } from '../types'
 
 const DAY = 86_400_000
 // Seed dates are anchored around "today" (2026-08-17) so "x days ago" reads naturally.
@@ -1014,4 +1014,35 @@ const seedPlatformContentsCamp4: PlatformContent[] = [
 
 const seedPlatformContents: PlatformContent[] = [...seedPlatformContentsBase, ...seedPlatformContentsCamp4]
 
-export { seedContents, seedCampaigns, seedPlatformContents }
+// ---------------------------------------------------------------------------
+// Asset library — reusable, reference-only assets (no binary media).
+// Derived from the seeded platform versions (deduplicated by asset_id) plus
+// one unused brand asset to demonstrate library-only entries.
+// ---------------------------------------------------------------------------
+
+const seedAssets: AssetRef[] = (() => {
+  const map = new Map<string, AssetRef>()
+  for (const pc of seedPlatformContents) {
+    for (const a of pc.assets) {
+      if (!map.has(a.asset_id)) {
+        map.set(a.asset_id, { ...a, createdAt: a.createdAt ?? pc.createdAt, notes: a.notes ?? '' })
+      }
+    }
+  }
+  map.set('brand-kit-01', {
+    asset_id: 'brand-kit-01',
+    filename: 'brand-kit.pdf',
+    type: 'document',
+    reference: 'brand/brand-kit.pdf',
+    provider: 'local',
+    role: null,
+    mimeType: 'application/pdf',
+    size: 1_200_000,
+    duration: null,
+    createdAt: iso(14),
+    notes: 'Brand kit — not yet referenced by any campaign.',
+  })
+  return [...map.values()]
+})()
+
+export { seedContents, seedCampaigns, seedPlatformContents, seedAssets }

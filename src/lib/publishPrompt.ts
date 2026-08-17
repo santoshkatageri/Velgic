@@ -24,6 +24,7 @@ const RULES = [
   'Preserve provided asset references (asset_id, filename, type, reference) unchanged.',
   'Use valid ISO 8601 datetime values (e.g. 2026-08-20T09:00:00-04:00).',
   'Respect the requested platform and format values.',
+  'Preserve factual/user-provided information unless explicitly instructed to modify it.',
 ]
 
 export function buildPublishPrompt(args: {
@@ -87,7 +88,9 @@ export function buildPublishPrompt(args: {
     ['{{HOOK}}', content?.hook ?? ''],
     ['{{TARGET_AUDIENCE}}', content?.audience ?? ''],
     ['{{CONTENT_STATUS}}', content?.status ?? ''],
+    ['{{BRAND_NAME}}', ''],
     ['{{BRAND_VOICE}}', ''],
+    ['{{BRAND_HANDLE}}', ''],
     ['{{PLATFORMS}}', platforms],
     ['{{FORMATS}}', formats],
     ['{{ASSETS}}', assets],

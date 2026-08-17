@@ -316,3 +316,31 @@ export function normalizeCampaignStatus(status: unknown, pcs: PlatformContent[])
   if (typeof status === 'string' && (CAMPAIGN_STATUS_KEYS as Set<string>).has(status)) return status as CampaignStatus
   return deriveCampaignStatus(pcs)
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Asset library helpers                                                      */
+/* -------------------------------------------------------------------------- */
+
+/** The platform versions that reference an asset (usage tracking). */
+export function assetUsage(assetId: string, platformContents: PlatformContent[]): PlatformContent[] {
+  return platformContents.filter((pc) => pc.assets.some((a) => a.asset_id === assetId))
+}
+
+/** Status glyph for campaign readiness summaries: ✓ ready-ish, ○ draft, ✗ failed. */
+export function statusGlyph(status: PublishStatus): string {
+  switch (status) {
+    case 'draft':
+      return '○'
+    case 'failed':
+      return '✗'
+    case 'ready':
+    case 'scheduled':
+    case 'published':
+      return '✓'
+  }
+}
+
+/** A blank optional metrics record (all null — nothing ingested in 2.x). */
+export function blankMetrics(): { views: null; likes: null; comments: null; shares: null; saves: null } {
+  return { views: null, likes: null, comments: null, shares: null, saves: null }
+}

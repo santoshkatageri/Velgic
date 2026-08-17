@@ -13,9 +13,10 @@ import {
   PLATFORM_META,
   PUBLISH_STATUS_META,
 } from '../lib/constants'
-import { campaignReadiness, nextScheduled, publishStatusTone } from '../lib/content'
+import { campaignReadiness, nextScheduled, publishStatusTone, statusGlyph } from '../lib/content'
 import { formatSchedule, timeAgo } from '../lib/utils'
 import { Button, CampaignStatusBadge, Card, ContentStatusBadge, EmptyState, Input, OriginBadge, Select } from '../components/ui'
+import { AssetLibrary } from '../components/AssetLibrary'
 import { ImportManifestModal } from '../components/ImportManifestModal'
 import {
   IconChevronRight,
@@ -39,6 +40,7 @@ function PlatformChip({ platform, status, schedule }: { platform: PlatformKey; s
       title={`${PLATFORM_META[platform].label} · ${PUBLISH_STATUS_META[status].label}${schedule ? ` · ${schedule}` : ''}`}
     >
       <Icon size={12} />
+      <span className="platform-chip__glyph">{statusGlyph(status)}</span>
       {PUBLISH_STATUS_META[status].label}
       {schedule && <span className="platform-chip__clock">{schedule}</span>}
     </span>
@@ -271,11 +273,6 @@ export function Content() {
                     </div>
                     <div className="campaign-card__top-right">
                       <CampaignStatusBadge status={campaign.status} />
-                      {readiness !== null && (
-                        <span className="campaign-card__readiness" title="Publishing readiness">
-                          {readiness}%
-                        </span>
-                      )}
                     </div>
                   </div>
                   <div className="campaign-card__platforms">
@@ -306,6 +303,7 @@ export function Content() {
                       ) : (
                         `Updated ${timeAgo(campaign.updatedAt)}`
                       )}
+                      {readiness !== null && <span className="campaign-card__readiness-note"> · {readiness}% ready</span>}
                     </span>
                     <span className="inline-link" style={{ pointerEvents: 'none' }}>
                       Open <IconChevronRight size={13} />
@@ -317,6 +315,9 @@ export function Content() {
           </div>
         )}
       </section>
+
+      {/* ---- Asset library ---- */}
+      <AssetLibrary />
 
       <ImportManifestModal open={importOpen} onClose={() => setImportOpen(false)} onImported={(id) => navigate(`/campaigns/${id}`)} />
     </div>

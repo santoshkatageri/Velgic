@@ -226,10 +226,11 @@ is imported (no partial imports). Issue codes:
 | `MISSING_REQUIRED_METADATA`   | A required field (or platform metadata key) is missing or has the wrong type. |
 | `INVALID_DATETIME`            | A datetime is not valid ISO 8601, or `schedule.enabled` is true without a datetime. |
 | `INVALID_PLATFORM_FORMAT`     | Unknown platform, or a format not allowed for that platform.   |
-| `INVALID_ASSET_REFERENCE`     | An asset is missing `asset_id` / `filename` / `reference`, has an unknown `type`, or has invalid optional metadata types. |
+| `INVALID_ASSET_REFERENCE`     | An asset is missing `asset_id` / `filename` / `reference`, has an unknown `type`, has a `role` outside `video` \| `thumbnail` \| `media` \| `null`, or has invalid optional metadata types. |
 | `INVALID_STATUS`              | A status value outside the allowed sets (content, campaign, or platform). |
 | `INVALID_CONTENT_TYPE`        | `campaign.content.content_type` is not a known content type.   |
 | `INVALID_PUBLISHED_URL`       | `published_url` is present but is not a valid `http(s)://` URL. |
+| `INVALID_TIMEZONE`            | A `timezone` value (top level or schedule) is not a valid IANA name (validated via `Intl.DateTimeFormat`). |
 | `INVALID_METADATA`            | Other malformed optional/metadata values.                      |
 
 Every issue carries a JSON path (e.g. `$.platforms[0].schedule.datetime`) and a
@@ -381,6 +382,22 @@ Placeholders (`{{CONTENT_TITLE}}`, `{{CONTENT_CONCEPT}}`, `{{TARGET_AUDIENCE}}`,
 `{{TIMEZONE}}`, `{{SCHEDULE}}`, `{{CONTENT_STATUS}}`, `{{CAMPAIGN_STATUS}}`, …)
 are filled with the campaign's current values and stay literal wherever Velgic has
 no value yet.
+
+---
+
+## 10.1 Relationship to the in-app asset library
+
+The manifest's asset entries are the exchange representation. Inside the app,
+assets live in a **reusable asset library** (Zustand + localStorage): each
+library asset carries the canonical fields above plus two app-level fields that
+are deliberately NOT part of the manifest — `createdAt` and `notes`. Platform
+versions reference library assets by `asset_id`; the same asset can be used by
+several campaigns/platform versions, usage is visible in the UI, and referenced
+assets cannot be deleted. Binary media is never stored anywhere.
+
+Platform versions also retain optional, manually entered `metrics`
+(views/likes/comments/shares/saves) for future Insights — these are app-level
+data and are not part of the manifest v1.0 contract.
 
 ---
 

@@ -10,6 +10,7 @@ import type {
   PublishStatus,
 } from '../types'
 import {
+  ASSET_ROLES,
   ASSET_TYPES,
   CAMPAIGN_STATUSES,
   CONTENT_ORIGINS,
@@ -50,6 +51,7 @@ export const MANIFEST_ISSUE_CODES = [
   'INVALID_CONTENT_TYPE',
   'INVALID_METADATA',
   'INVALID_PUBLISHED_URL',
+  'INVALID_TIMEZONE',
 ] as const
 
 export type ManifestIssueCode = (typeof MANIFEST_ISSUE_CODES)[number]
@@ -290,6 +292,16 @@ function hasOwn(obj: UnknownRecord, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key)
 }
 
+/** Validates an IANA timezone name via Intl (falls back to true when unavailable). */
+function isValidTimezone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz }).format()
+    return true
+  } catch {
+    return false
+  }
+}
+
 function isPlatformKey(v: unknown): v is PlatformKey {
   return typeof v === 'string' && (PLATFORM_KEYS as readonly string[]).includes(v)
 }
@@ -326,6 +338,8 @@ export function validateManifest(value: unknown): ManifestIssue[] {
   }
   if (value.timezone !== undefined && value.timezone !== null && !isString(value.timezone)) {
     add('INVALID_METADATA', '$.timezone', '"timezone" must be a string (IANA name) or null.')
+  } else if (isString(value.timezone) && value.timezone.trim() !== '' && !isValidTimezone(value.timezone)) {
+    add('INVALID_TIMEZONE', '$.timezone', `"${value.timezone}" is not a valid IANA timezone name.`)
   }
 
   // --- campaign ------------------------------------------------------------
@@ -443,6 +457,8 @@ export function validateManifest(value: unknown): ManifestIssue[] {
       }
       if (s.timezone !== undefined && s.timezone !== null && !isString(s.timezone)) {
         add('INVALID_METADATA', `${path}.schedule.timezone`, '"timezone" must be a string (IANA name) or null.')
+      } else if (isString(s.timezone) && s.timezone.trim() !== '' && !isValidTimezone(s.timezone)) {
+        add('INVALID_TIMEZONE', `${path}.schedule.timezone`, `"${s.timezone}" is not a valid IANA timezone name.`)
       }
     }
 
@@ -488,8 +504,14 @@ export function validateManifest(value: unknown): ManifestIssue[] {
         if (asset.provider !== undefined && !isString(asset.provider)) {
           add('INVALID_ASSET_REFERENCE', `${apath}.provider`, '"provider" must be a string.')
         }
-        if (asset.role !== undefined && asset.role !== null && !isString(asset.role)) {
-          add('INVALID_ASSET_REFERENCE', `${apath}.role`, '"role" must be a string or null.')
+        if (asset.role !== undefined && asset.role !== null) {
+          if (!isString(asset.role) || !(ASSET_ROLES as string[]).includes(asset.role)) {
+            add(
+              'INVALID_ASSET_REFERENCE',
+              `${apath}.role`,
+              `"role" must be one of: ${ASSET_ROLES.join(', ')} or null (got "${String(asset.role)}").`,
+            )
+          }
         }
         for (const key of ['mimeType', 'size', 'duration'] as const) {
           const v = asset[key]

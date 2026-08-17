@@ -132,7 +132,11 @@ export type AssetType = 'video' | 'image' | 'audio' | 'document' | 'link'
 /**
  * An asset is never embedded in JSON — only referenced. `reference` is a path
  * understood by the active StorageProvider (local paths in V2; Google Drive /
- * Cloudflare R2 providers can be plugged in later).
+ * Cloudflare R2 providers can be plugged in later). Assets live in a reusable
+ * asset library; platform versions reference them by `asset_id`.
+ *
+ * `createdAt` / `notes` are library-level fields (normalized on entry to the
+ * library) and are intentionally NOT part of the Publishing Manifest.
  */
 export interface AssetRef {
   asset_id: string
@@ -148,6 +152,17 @@ export interface AssetRef {
   size?: number | null
   /** Duration in seconds (video/audio). */
   duration?: number | null
+  createdAt?: string
+  notes?: string
+}
+
+/** Optional manual metrics retained per published platform version for future Insights. */
+export interface PlatformMetrics {
+  views: number | null
+  likes: number | null
+  comments: number | null
+  shares: number | null
+  saves: number | null
 }
 
 export interface ScheduleInfo {
@@ -192,6 +207,8 @@ export interface PlatformContent {
   publishedAt: string | null
   assets: AssetRef[]
   notes: string
+  /** Optional manual metrics (not ingested automatically in 2.x). */
+  metrics?: PlatformMetrics | null
   instagram?: InstagramMetadata
   youtube?: YoutubeMetadata
   linkedin?: LinkedInMetadata

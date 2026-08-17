@@ -15,7 +15,9 @@ CONTEXT ({{PLACEHOLDER}} means: fill this in before sending)
 {{HOOK}}: You do not need to pay for your creator stack. Here are the open-source tools I actually use.
 {{TARGET_AUDIENCE}}: Technical creators
 {{CONTENT_STATUS}}: in_production
+{{BRAND_NAME}}: {{BRAND_NAME}}
 {{BRAND_VOICE}}: {{BRAND_VOICE}}
+{{BRAND_HANDLE}}: {{BRAND_HANDLE}}
 {{PLATFORMS}}: instagram (Reel), youtube (Short), linkedin (Post), x (Thread)
 {{FORMATS}}: Reel, Short, Post, Thread
 {{ASSETS}}: instagram/oss-reel.mp4 | filename=oss-reel.mp4 | type=video | asset_id=instagram-reel-03 | role=media | provider=local | mimeType=video/mp4 | size=24800000 | duration=42 | platform=instagram
@@ -77,6 +79,7 @@ RULES
 9. Preserve provided asset references (asset_id, filename, type, reference) unchanged.
 10. Use valid ISO 8601 datetime values (e.g. 2026-08-20T09:00:00-04:00).
 11. Respect the requested platform and format values.
+12. Preserve factual/user-provided information unless explicitly instructed to modify it.
 
 VELGIC PUBLISHING MANIFEST SCHEMA (follow exactly)
 Top level: schema_version (string, always "1.0"), manifest_id (string), generated_at (ISO 8601), timezone (IANA name or null), brand { name, voice, handle } (strings or null), campaign {…}, platforms [ … ].
