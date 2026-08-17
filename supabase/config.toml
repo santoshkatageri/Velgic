@@ -1,0 +1,78 @@
+# Velgic V3 — Supabase project configuration.
+#
+# This file mirrors what `supabase init` produces and is committed to the
+# repo. Real secrets (DB password, service-role JWT, etc.) live OUTSIDE
+# this file and are filled in by `supabase start` / `supabase status` for
+# local dev. Production secrets are issued by the Supabase dashboard for
+# the deployed project.
+#
+# V3 toggles explicitly reflect docs/architecture-v3.md:
+#   • realtime = off (Velgic V3 does not use Realtime)
+#   • edge_runtime = off (V3 ships no Edge Functions)
+#   • one private bucket `velgic-assets` will be added by SQL migrations
+#     (Phase 2); RLS over objects enforces per-workspace isolation.
+#   • storage.file_size_limit = 50MiB (V2 reference-only uploads; raise in
+#     Phase 5 if the upload UI ships)
+
+project_id = "velgic"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = false                   # Phase 1: off. Documented as future extension.
+admin_only = false
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[storage.image_transformation]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false       # V3 keeps email confirmation off; revisit later.
+
+[edge_runtime]
+enabled = false                    # V3 ships no Edge Functions at launch.
+inspector_port = 8083
+
+[experimental]
+webhooks = { enabled = true }

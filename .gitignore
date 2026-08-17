@@ -3,6 +3,12 @@ dist
 dist-ssr
 *.local
 .DS_Store
+
+# V3 — Supabase env vars
+# All actual .env* files are gitignored; only .env.example is committed
+# as a placeholder list.
+.env*
+!.env.example
 *.log
 .vite
 
