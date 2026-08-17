@@ -1,0 +1,44 @@
+name: CI
+
+# Quality gate only — Cloudflare Pages remains responsible for deployment.
+# No deploy steps, no AI/social/storage credentials, no extra tooling.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    name: Quality gate (type-check + tests + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Node 22 (active LTS) — matches the repo: no engines pin, Vite 5.4
+      # requires ^18 || >=20, TypeScript 5.6.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Test-only harness dependency for the acceptance suites; never part of
+      # package.json or the lockfile.
+      - name: Install test-only jsdom harness
+        run: npm install --no-save --no-package-lock jsdom
+
+      - name: TypeScript validation
+        run: npx tsc
+
+      - name: Acceptance tests
+        run: npm test
+
+      - name: Production build
+        run: npm run buildO
