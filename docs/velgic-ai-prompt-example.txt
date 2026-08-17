@@ -9,18 +9,20 @@ CONTEXT ({{PLACEHOLDER}} means: fill this in before sending)
 
 {{CONTENT_TITLE}}: Top open-source alternatives for content creators
 {{CONTENT_CONCEPT}}: Free, open-source replacements for the paid creator stack — video editing, design, hosting, analytics — each with one honest caveat, framed as "you trade money for setup time".
+{{CONTENT_ORIGIN}}: research
 {{CONTENT_TYPE}}: short_video
 {{CONTENT_FORMAT}}: Vertical short-form, under 60s
+{{HOOK}}: You do not need to pay for your creator stack. Here are the open-source tools I actually use.
 {{TARGET_AUDIENCE}}: Technical creators
 {{CONTENT_STATUS}}: in_production
 {{BRAND_VOICE}}: {{BRAND_VOICE}}
 {{PLATFORMS}}: instagram (Reel), youtube (Short), linkedin (Post), x (Thread)
 {{FORMATS}}: Reel, Short, Post, Thread
-{{ASSETS}}: instagram/oss-reel.mp4 | type=video | asset_id=instagram-reel-03 | role=media | platform=instagram
-youtube/oss-short.mp4 | type=video | asset_id=youtube-short-03 | role=video | platform=youtube
-youtube/oss-thumb.jpg | type=image | asset_id=youtube-thumb-03 | role=thumbnail | platform=youtube
+{{ASSETS}}: instagram/oss-reel.mp4 | filename=oss-reel.mp4 | type=video | asset_id=instagram-reel-03 | role=media | provider=local | mimeType=video/mp4 | size=24800000 | duration=42 | platform=instagram
+youtube/oss-short.mp4 | filename=oss-short.mp4 | type=video | asset_id=youtube-short-03 | role=video | provider=local | mimeType=video/mp4 | size=24800000 | duration=42 | platform=youtube
+youtube/oss-thumb.jpg | filename=oss-thumb.jpg | type=image | asset_id=youtube-thumb-03 | role=thumbnail | provider=local | mimeType=image/jpeg | size=320000 | duration=null | platform=youtube
 {{TIMEZONE}}: Asia/Kolkata
-{{SCHEDULE}}: youtube: Aug 18, 2:30 PM · Asia/Kolkata
+{{SCHEDULE}}: youtube: 2026-08-18T09:00:00.000Z (Aug 18, 2:30 PM · Asia/Kolkata)
 {{PUBLISHED_URL}}: instagram: https://www.instagram.com/reel/oss-creators
 {{HASHTAGS}}: #opensource #creators #buildinpublic
 {{LOCATION}}: {{LOCATION}}
@@ -94,6 +96,7 @@ x metadata: { content (string), is_thread (boolean), thread (array of strings or
 schedule: enabled (boolean), datetime (ISO 8601 or null — required when enabled), timezone (IANA name or null).
 published_url: a valid http(s) URL string when present, otherwise null.
 
+NOTE: The EXAMPLE below shows the exact shape and key names only — DO NOT copy its values. Fill every value from the CONTEXT and EXISTING PLATFORM TEXT sections above.
 EXAMPLE (match this shape and key names exactly)
 {
   "schema_version": "1.0",

@@ -55,14 +55,19 @@ export function buildPublishPrompt(args: {
   const assets = platformContents
     .flatMap((pc) =>
       pc.assets.map(
-        (a) => `${a.reference} | type=${a.type} | asset_id=${a.asset_id} | role=${a.role ?? 'media'} | platform=${pc.platform}`,
+        (a) =>
+          `${a.reference} | filename=${a.filename} | type=${a.type} | asset_id=${a.asset_id} | role=${a.role ?? 'media'} | provider=${a.provider || 'local'} | mimeType=${a.mimeType ?? 'null'} | size=${a.size ?? 'null'} | duration=${a.duration ?? 'null'} | platform=${pc.platform}`,
       ),
     )
     .join('\n')
   const timezone = platformContents.find((pc) => pc.schedule.enabled && pc.schedule.timezone)?.schedule.timezone ?? ''
+  // Include the exact ISO 8601 datetime so external AI tools can preserve it
+  // verbatim (rules: "Do not invent dates", "Use valid ISO 8601 datetime values").
   const scheduleLines = platformContents
     .filter((pc) => pc.schedule.enabled && pc.schedule.datetime)
-    .map((pc) => `${pc.platform}: ${formatSchedule(pc.schedule.datetime, pc.schedule.timezone)}`)
+    .map(
+      (pc) => `${pc.platform}: ${pc.schedule.datetime} (${formatSchedule(pc.schedule.datetime, pc.schedule.timezone)})`,
+    )
     .join('\n')
   const publishedUrls = platformContents
     .filter((pc) => pc.publishedUrl)
@@ -76,8 +81,10 @@ export function buildPublishPrompt(args: {
   const context: Array<[string, string]> = [
     ['{{CONTENT_TITLE}}', content?.title ?? ''],
     ['{{CONTENT_CONCEPT}}', content?.concept ?? ''],
+    ['{{CONTENT_ORIGIN}}', content?.origin ?? ''],
     ['{{CONTENT_TYPE}}', content?.contentType ?? ''],
     ['{{CONTENT_FORMAT}}', content?.format ?? ''],
+    ['{{HOOK}}', content?.hook ?? ''],
     ['{{TARGET_AUDIENCE}}', content?.audience ?? ''],
     ['{{CONTENT_STATUS}}', content?.status ?? ''],
     ['{{BRAND_VOICE}}', ''],
@@ -130,6 +137,7 @@ export function buildPublishPrompt(args: {
   lines.push('VELGIC PUBLISHING MANIFEST SCHEMA (follow exactly)')
   lines.push(MANIFEST_SCHEMA_FIELDS)
   lines.push('')
+  lines.push('NOTE: The EXAMPLE below shows the exact shape and key names only — DO NOT copy its values. Fill every value from the CONTEXT and EXISTING PLATFORM TEXT sections above.')
   lines.push('EXAMPLE (match this shape and key names exactly)')
   lines.push(MANIFEST_SCHEMA_EXAMPLE)
 
